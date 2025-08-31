@@ -1,0 +1,4 @@
+node_modules
+.env
+relatime.db
+relatime.log
