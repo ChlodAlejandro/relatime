@@ -16,22 +16,22 @@ export const durationUnits = {
 };
 export type DurationUnit = keyof typeof durationUnits;
 export const durationUnitShorthandRegexes: Record<keyof typeof durationUnits, RegExp> = {
-    second: /s|sec/,
+    second: /s|secs?/,
     minute: /m(?!o)|min/,
     hour: /h|hr/,
-    day: /d/,
+    day: /dy?/,
     week: /w|wk/,
     month: /mo|mon/,
     year: /y|yr/,
 };
 export const durationUnitFullRegexes: Record<keyof typeof durationUnits, RegExp> = {
-    second: /sec|second(s)?/i,
-    minute: /min|minute(s)?/i,
-    hour: /hr|hour(s)?/i,
-    day: /day(s)?/i,
-    week: /wk|week(s)?/i,
-    month: /mon|month(s)?/i,
-    year: /yr|year(s)?/i,
+    second: /seconds?/i,
+    minute: /minutes?/i,
+    hour: /hours?/i,
+    day: /days?/i,
+    week: /weeks?/i,
+    month: /months?/i,
+    year: /years?/i,
 };
 export const durationUnitRegexCaseInsensitive = new RegExp(
     Object.values(durationUnitShorthandRegexes)
