@@ -1,9 +1,7 @@
-import { MessageFlags, SlashCommandBuilder, time } from "discord.js";
+import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import { getDb } from "../../database/Database.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
 import { RelativeTimeParser } from "../../parsing/RelativeTimeParser.ts";
-import detectAbsoluteTime from "../../time/detectAbsoluteTime.ts";
-import detectRelativeTime from "../../time/detectRelativeTime.ts";
 import timezoneToString from "../../util/timezoneToString.ts";
 import { ISlashCommand } from "../types.ts";
 
@@ -20,6 +18,8 @@ export const last = <ISlashCommand>{
     async execute(interaction) {
         if (!interaction.isChatInputCommand()) return;
 
+        const flags: ("SuppressNotifications" | "Ephemeral")[] = [];
+
         // Get the last message in the channel
         const messages = await interaction.channel?.messages.fetch({ limit: 10 });
         if (!messages) {
@@ -33,7 +33,10 @@ export const last = <ISlashCommand>{
             return;
         }
 
-        const lastMessage = messages.filter(m => m.id !== interaction.id).first();
+        const lastMessage = messages
+            .filter(m => m.id !== interaction.id)
+            .filter(m => m.author.id !== m.client.user.id)
+            .first();
         if (!lastMessage) {
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
@@ -67,14 +70,33 @@ export const last = <ISlashCommand>{
                 }
             });
 
-        const relativeTimeMatches = new RelativeTimeParser(lastMessage.content).parse();
-        const absoluteTimeMatches = detectAbsoluteTime(lastMessage.content, timezone);
+        let relativeTimeMatches = new RelativeTimeParser(lastMessage.content).parse();
+        // const absoluteTimeMatches = detectAbsoluteTime(lastMessage.content, timezone);
+        const absoluteTimeMatches = [];
+
+        // Check for relative times that are less than a second.
+        // Discord doesn't display seconds in timestamps, so these are useless.
+        let hasSecondMatches = false;
+        relativeTimeMatches = relativeTimeMatches.filter((match) => {
+            if (Math.abs(match.duration) < 60) {
+                hasSecondMatches = true;
+                return false;
+            }
+            return true;
+        });
+
         if (relativeTimeMatches.length === 0 && absoluteTimeMatches.length === 0) {
+            let description = "The last message does not contain any recognizable relative or absolute time expressions.";
+
+            if (hasSecondMatches) {
+                description += "\n\nNote: Relative times of less than a minute (e.g. '30 seconds ago') are not processed since Discord timestamps do not display seconds.";
+            }
+
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
                     "No relative or absolute time found",
-                    "The last message does not contain any recognizable relative or absolute time expressions.",
+                    description,
                 )],
             });
             return;
@@ -83,7 +105,8 @@ export const last = <ISlashCommand>{
         let content = "";
 
         if (usedInteractionUserTimezone) {
-            content += `No timezone was set for the author of the last message, so the timezone of <@${interaction.user.id}> (${timezoneToString(timezone)}) was used instead.\n\n`;
+            content += `No timezone was set for the author of the last message, so the timezone of <@${interaction.user.id}> (\`${timezoneToString(timezone)}\`) was used instead.\n\n`;
+            flags.push("SuppressNotifications");
         } else if (!timezone) {
             content += "No timezone is set for the author of the last message, so times were interpreted as UTC. You can set your timezone with `/config timezone`.\n\n";
         }
@@ -98,8 +121,12 @@ export const last = <ISlashCommand>{
 
         content += matchStrings.join("\n");
 
+        if (interaction.options.getBoolean("ephemeral")) {
+            flags.push("Ephemeral");
+        }
+
         await interaction.reply({
-            flags: interaction.options.getBoolean("ephemeral") ? MessageFlags.Ephemeral : undefined,
+            flags: flags,
             content: content,
         });
     },

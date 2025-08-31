@@ -1,3 +1,8 @@
+/*
+ * Second has been commented out since Discord timestamps don't
+ * seem to show seconds anyway.
+ */
+
 export const durationUnits = {
     second: 1,
     minute: 60,

@@ -80,6 +80,14 @@ describe("RelativeTimeParser tests", () => {
         expect(matches[1].duration).toBe(60 * 30);
     });
 
+    test("edge: missing unit", () => {
+        const matches = new RelativeTimeParser("in 2").parse();
+        expect(matches).toHaveLength(0);
+
+        const matches2 = new RelativeTimeParser("just a").parse();
+        expect(matches2).toHaveLength(0);
+    });
+
     test("edge: double units", () => {
         const matches = new RelativeTimeParser("in 2 hours minutes").parse();
         expect(matches).toHaveLength(1);

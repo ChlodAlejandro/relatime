@@ -97,6 +97,11 @@ export class RelativeTimeParser extends TimeParser {
                     durationInSeconds = (durationInSeconds ?? 0) + detectedDuration;
                 }
             } while (detectedDuration !== null);
+            if (durationInSeconds == null) {
+                // No duration found, discard.
+                return false;
+            }
+
             if (this.negateDurationRegex.test(word)) {
                 // Negate the duration.
                 durationInSeconds *= -1;
