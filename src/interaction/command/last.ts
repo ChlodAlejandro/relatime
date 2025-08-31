@@ -1,6 +1,7 @@
 import { MessageFlags, SlashCommandBuilder, time } from "discord.js";
 import { getDb } from "../../database/Database.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
+import { RelativeTimeParser } from "../../parsing/RelativeTimeParser.ts";
 import detectAbsoluteTime from "../../time/detectAbsoluteTime.ts";
 import detectRelativeTime from "../../time/detectRelativeTime.ts";
 import timezoneToString from "../../util/timezoneToString.ts";
@@ -66,7 +67,7 @@ export const last = <ISlashCommand>{
                 }
             });
 
-        const relativeTimeMatches = detectRelativeTime(lastMessage.content);
+        const relativeTimeMatches = new RelativeTimeParser(lastMessage.content).parse();
         const absoluteTimeMatches = detectAbsoluteTime(lastMessage.content, timezone);
         if (relativeTimeMatches.length === 0 && absoluteTimeMatches.length === 0) {
             await interaction.reply({
@@ -89,7 +90,7 @@ export const last = <ISlashCommand>{
 
         const matchStrings = [];
         for (const match of relativeTimeMatches) {
-            matchStrings.push(`${match.match[0]} \u2192 <t:${Math.floor((Date.now() / 1e3) + match.duration)}:F>`);
+            matchStrings.push(`${match.match} \u2192 <t:${Math.floor((Date.now() / 1e3) + match.duration)}:F>`);
         }
         for (const match of absoluteTimeMatches) {
             matchStrings.push(`${match.match[0]} \u2192 <t:${Math.floor(match.date.epochMilliseconds / 1e3)}:F>`);
