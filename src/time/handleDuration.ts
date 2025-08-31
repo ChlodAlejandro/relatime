@@ -12,8 +12,8 @@ export const unitRegex = new RegExp([
     daysRegex,
     weeksRegex,
     monthsRegex,
-    yearsRegex
-].map(r => r.source.replace(/\(/g, "(?:")).join('|'));
+    yearsRegex,
+].map(r => r.source.replace(/\(/g, "(?:")).join("|"));
 export const durationRegex =
     new RegExp(String.raw`([\d,.]+)\s*(${unitRegex.source})`);
 
@@ -22,57 +22,57 @@ export const durationRegex =
  * the number of seconds it represents.
  */
 export function handleDuration(match: RegExpExecArray): number {
-    const value = parseFloat(match[1].replace(/,/g, ''));
+    const value = parseFloat(match[1].replace(/,/g, ""));
     if (isNaN(value))
         return NaN;
     const unit = match[2].toLowerCase();
     let duration = 0;
     switch (unit) {
-        case 'second':
-        case 'seconds':
-        case 's':
-        case 'sec':
-        case 'secs':
+        case "second":
+        case "seconds":
+        case "s":
+        case "sec":
+        case "secs":
             duration = value;
             break;
-        case 'minute':
-        case 'minutes':
-        case 'm':
-        case 'min':
-        case 'mins':
+        case "minute":
+        case "minutes":
+        case "m":
+        case "min":
+        case "mins":
             duration = value * 60;
             break;
-        case 'hour':
-        case 'hours':
-        case 'h':
-        case 'hr':
-        case 'hrs':
+        case "hour":
+        case "hours":
+        case "h":
+        case "hr":
+        case "hrs":
             duration = value * 3600;
             break;
-        case 'day':
-        case 'days':
-        case 'd':
+        case "day":
+        case "days":
+        case "d":
             duration = value * 86400;
             break;
-        case 'week':
-        case 'weeks':
-        case 'w':
-        case 'wk':
-        case 'wks':
+        case "week":
+        case "weeks":
+        case "w":
+        case "wk":
+        case "wks":
             duration = value * 604800;
             break;
-        case 'month':
-        case 'months':
-        case 'mo':
-        case 'mos':
+        case "month":
+        case "months":
+        case "mo":
+        case "mos":
             // Approximate month as 30 days
             duration = value * 2592000;
             break;
-        case 'year':
-        case 'years':
-        case 'y':
-        case 'yr':
-        case 'yrs':
+        case "year":
+        case "years":
+        case "y":
+        case "yr":
+        case "yrs":
             // Approximate year as 365 days
             duration = value * 31536000;
             break;

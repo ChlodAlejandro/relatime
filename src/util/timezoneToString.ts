@@ -1,5 +1,5 @@
-import {DisplayFormat} from "timezone-soft";
-import {CustomTimezone, isCustomTimezone} from "./isCustomTimezone";
+import { DisplayFormat } from "timezone-soft";
+import { CustomTimezone, isCustomTimezone } from "./isCustomTimezone";
 import offsetToString from "./offsetToString";
 
 export default function timezoneToString(timezone: CustomTimezone | DisplayFormat | string | number): string {
@@ -17,20 +17,20 @@ export default function timezoneToString(timezone: CustomTimezone | DisplayForma
     } else {
         let subInfo = "";
         if ((timezone as any).name) {
-            timeString = `${(timezone as any).name}`
+            timeString = `${(timezone as any).name}`;
             subInfo = `\`${timezone.iana}\``;
         } else {
             timeString = `\`${timezone.iana}\``;
         }
         if (subInfo) {
-            subInfo += `, `;
+            subInfo += ", ";
         }
         if (timezone.standard) {
             subInfo += offsetToString((timezone.standard as any).offset);
         }
         if (timezone.daylight && (timezone.standard as any).offset !== (timezone.standard as any).offset) {
             if (subInfo) {
-                subInfo += `, `;
+                subInfo += ", ";
             }
             subInfo += `${offsetToString((timezone.daylight as any).offset)} on daylight savings`;
         }

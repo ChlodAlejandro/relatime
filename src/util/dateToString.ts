@@ -9,11 +9,11 @@ export default function dateToString(date: Date, timezone: string | number, loca
             locale,
             Object.assign({}, format, {
                 timeZone: "UTC",
-                timeZoneName: undefined
-            })
+                timeZoneName: undefined,
+            }),
         ) + " " + offsetToString(timezone);
     } else {
         // timezone is an IANA timezone name
-        return date.toLocaleString(locale, {timeZone: timezone, ...format});
+        return date.toLocaleString(locale, { timeZone: timezone, ...format });
     }
 }

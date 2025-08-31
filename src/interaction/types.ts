@@ -1,4 +1,4 @@
-import {Interaction, SlashCommandBuilder, SlashCommandSubcommandBuilder} from "discord.js";
+import { Interaction, SlashCommandBuilder, SlashCommandSubcommandBuilder } from "discord.js";
 
 export interface ISlashCommand {
     builder: SlashCommandBuilder;
@@ -12,13 +12,13 @@ export interface ISlashSubcommand {
 
 function isSlashCommand(obj: any, willThrow?: false): obj is ISlashCommand;
 function isSlashCommand(obj: any, willThrow?: true): void;
-function isSlashCommand(obj: any, willThrow = false): boolean|void {
+function isSlashCommand(obj: any, willThrow = false): boolean | void {
     const isValid = obj
-        && typeof obj === 'object'
-        && 'builder' in obj
+        && typeof obj === "object"
+        && "builder" in obj
         && obj.builder instanceof SlashCommandBuilder
-        && 'execute' in obj
-        && typeof obj.execute === 'function';
+        && "execute" in obj
+        && typeof obj.execute === "function";
 
     if (willThrow && !isValid) {
         throw new Error("Object is not a valid ISlashCommand");

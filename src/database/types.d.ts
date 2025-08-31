@@ -1,4 +1,4 @@
-declare module 'knex/types/tables' {
+declare module "knex/types/tables" {
     interface Tables {
         config: {
             cfg_user: string; // Discord user ID
