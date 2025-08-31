@@ -3,6 +3,7 @@ export interface CombineRegexOptions {
     trimEnd: RegExp;
     append: string;
     prepend: string;
+    joiner: string;
 }
 
 export default function combineRegex(
@@ -31,7 +32,7 @@ export default function combineRegex(
 
     let source = sources
         .map(s => `(?:${s})`)
-        .join("|");
+        .join(options.joiner ?? "|");
     if (options.prepend)
         source = `${options.prepend}(?:${source})`;
     if (options.append)

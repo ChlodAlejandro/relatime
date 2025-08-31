@@ -11,6 +11,73 @@ export default class Parser {
     private static readonly WHITESPACE_REGEX = /^\s+/;
     private static readonly WHITESPACE_SIMPLE_REGEX = /^[ \t]+/;
     private static readonly NUMBER_REGEX = /^\d+/;
+    private static readonly ORDINAL_MAIN = {
+        first: 1,
+        second: 2,
+        third: 3,
+        forth: 4,
+        fourth: 4,
+        fifth: 5,
+        sixth: 6,
+        seventh: 7,
+        eighth: 8,
+        ninth: 9,
+    };
+    private static readonly ORDINAL_MAIN_REGEX = new RegExp(
+        `^(?:${Object.keys(Parser.ORDINAL_MAIN).join("|")})`,
+        "i",
+    );
+    private static readonly ORDINAL_OVERRIDE = {
+        tenth: 10,
+        eleventh: 11,
+        twelfth: 12,
+        thirteenth: 13,
+        fourteenth: 14,
+        fifteenth: 15,
+        sixteenth: 16,
+        seventeenth: 17,
+        eighteenth: 18,
+        nineteenth: 19,
+        twentieth: 20,
+        thirtieth: 30,
+        fortieth: 40,
+        fiftieth: 50,
+        sixtieth: 60,
+        seventieth: 70,
+        eightieth: 80,
+        ninetieth: 90,
+    };
+    private static readonly ORDINAL_OVERRIDE_REGEX = new RegExp(
+        `^(?:${Object.keys(Parser.ORDINAL_OVERRIDE).join("|")})`,
+        "i",
+    );
+    // noinspection SpellCheckingInspection
+    private static readonly ORDINAL_PREFIXES = {
+        twenty: 20,
+        thirty: 30,
+        forty: 40,
+        fourty: 40,
+        fifty: 50,
+        sixty: 60,
+        seventy: 70,
+        eighty: 80,
+        ninety: 90,
+    };
+    private static readonly ORDINAL_PREFIX_REGEX = new RegExp(
+        `^(?:${Object.keys(Parser.ORDINAL_PREFIXES).join("|")})`,
+        "i",
+    );
+    private static readonly ORDINAL_REGEX = combineRegex(
+        [
+            Parser.ORDINAL_MAIN_REGEX,
+            Parser.ORDINAL_OVERRIDE_REGEX,
+            combineRegex([Parser.ORDINAL_PREFIX_REGEX, Parser.ORDINAL_MAIN_REGEX], {
+                joiner: "",
+            }),
+        ], {
+            trimStart: /\^/,
+        },
+    );
 
     public readonly source: string;
     protected working: string;
@@ -129,6 +196,50 @@ export default class Parser {
             }
             return parseInt(match[0], 10);
         }
+        return null;
+    }
+
+    /**
+     * Consume and return the next ordinal number (e.g. "first", "second", "third").
+     */
+    public consumeOrdinal(excludeWhitespace = false): number {
+        if (this.peekRegex(/\d+(th|st|nd|rd)\b/i)) {
+            // This is just a number and a suffix. Consume all.
+            const number = this.consumeNumbers();
+            this.consumeRegex(/(th|st|nd|rd)\b/i);
+            if (!excludeWhitespace) {
+                this.consumeWhitespace();
+            }
+            return number;
+        } if (this.peekRegex(Parser.ORDINAL_OVERRIDE_REGEX)) {
+            const ordinal = this.consumeRegex(Parser.ORDINAL_OVERRIDE_REGEX);
+            if (!excludeWhitespace) {
+                this.consumeWhitespace();
+            }
+            return Parser.ORDINAL_OVERRIDE[ordinal.toLowerCase()];
+        } else if (this.peekRegex(Parser.ORDINAL_MAIN_REGEX)) {
+            const ordinal = this.consumeRegex(Parser.ORDINAL_MAIN_REGEX);
+            if (!excludeWhitespace) {
+                this.consumeWhitespace();
+            }
+            return Parser.ORDINAL_MAIN[ordinal.toLowerCase()];
+        } else if (this.peekRegex(Parser.ORDINAL_PREFIX_REGEX)) {
+            // This is a prefix like "twenty", "thirty", etc.
+            const prefix = this.consumeRegex(Parser.ORDINAL_PREFIX_REGEX);
+            const main = this.consumeRegex(combineRegex([
+                /[- ]?/,
+                Parser.ORDINAL_MAIN_REGEX,
+            ], { joiner: "" }));
+            if (!main) {
+                // Invalid ordinal, e.g. "twenty something"
+                return null;
+            }
+            if (!excludeWhitespace) {
+                this.consumeWhitespace();
+            }
+            return Parser.ORDINAL_PREFIXES[prefix.toLowerCase()] + Parser.ORDINAL_MAIN[main.toLowerCase()];
+        }
+
         return null;
     }
 

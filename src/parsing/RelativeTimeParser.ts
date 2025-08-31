@@ -53,6 +53,7 @@ export class RelativeTimeParser extends TimeParser {
                 continue;
             if (this.detectOsuDurations(matches, word, startIndex))
                 continue;
+            // TODO: Relative keywords ("in the next hour")
 
             if (lastIndex === this.index) {
                 log.warn("RelativeTimeParser did not advance!");

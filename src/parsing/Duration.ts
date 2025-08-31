@@ -3,6 +3,8 @@
  * seem to show seconds anyway.
  */
 
+import combineRegex from "../util/combineRegex.ts";
+
 export const durationUnits = {
     second: 1,
     minute: 60,
@@ -29,10 +31,17 @@ export const durationUnitFullRegexes: Record<keyof typeof durationUnits, RegExp>
     minute: /minutes?/i,
     hour: /hours?/i,
     day: /days?/i,
-    week: /weeks?/i,
+    week: /week(?:day)?s?/i,
     month: /months?/i,
     year: /years?/i,
 };
+export const durationUnitRegexes = Object.fromEntries(
+    Object.entries(durationUnits)
+        .map(([k, v]) => [
+            k,
+            combineRegex([durationUnitShorthandRegexes[v], durationUnitFullRegexes[v]]),
+        ]),
+) as Record<keyof typeof durationUnits, RegExp>;
 export const durationUnitRegexCaseInsensitive = new RegExp(
     Object.values(durationUnitShorthandRegexes)
         .concat(Object.values(durationUnitFullRegexes))
