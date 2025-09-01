@@ -24,7 +24,7 @@ export const timezone = <ISlashSubcommand>{
         const tz = interaction.options.getString("timezone");
         if (tz == null) {
             const currentValue = await getUserConfig(interaction.user.id, <const>["timezone"]);
-            const value = currentValue == null ?
+            const value = currentValue.timezone == null ?
                 "unset" : `\`${currentValue.timezone}\``;
 
             await interaction.reply({

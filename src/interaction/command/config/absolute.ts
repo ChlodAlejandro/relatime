@@ -18,7 +18,7 @@ export const absolute = <ISlashSubcommand>{
         const enabled = interaction.options.getBoolean("enable");
         if (enabled == null) {
             const currentValue = await getUserConfig(interaction.user.id, <const>["absolute"]);
-            const value = currentValue == null ?
+            const value = currentValue.absolute == null ?
                 "unset (disabled by default)" :
                 (currentValue.absolute === "true" ? "enabled" : "disabled");
 
