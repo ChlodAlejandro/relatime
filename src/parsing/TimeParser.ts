@@ -266,7 +266,7 @@ export default class TimeParser extends Parser {
 
         // Is there a "the" here? We might want to cut it out.
         // This is to support "of the current year" or "of the next month".
-        if (/^the$/.test(this.peekWord().toLowerCase())) {
+        if (/^the$/.test(this.peekWord()?.toLowerCase())) {
             this.consumeWord();
         }
 

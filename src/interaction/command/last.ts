@@ -1,9 +1,25 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import { getDb } from "../../database/Database.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
+import AbsoluteTimeParser from "../../parsing/AbsoluteTimeParser.ts";
+import { DurationUnit } from "../../parsing/Duration.ts";
 import { RelativeTimeParser } from "../../parsing/RelativeTimeParser.ts";
 import timezoneToString from "../../util/timezoneToString.ts";
 import { ISlashCommand } from "../types.ts";
+
+/**
+ * Timestamp flags to use for different precision levels. Each letter generates another timestamp, joined by commas.
+ * @see https://discord.com/developers/docs/reference#message-formatting-timestamp-styles
+ */
+const precisionSyntaxFlags: Record<DurationUnit, string> = {
+    second: "DT",
+    minute: "f",
+    hour: "f",
+    day: "D",
+    week: "D",
+    month: "D",
+    year: "D",
+};
 
 export const last = <ISlashCommand>{
     builder: new SlashCommandBuilder()
@@ -70,37 +86,8 @@ export const last = <ISlashCommand>{
                 }
             });
 
-        let relativeTimeMatches = new RelativeTimeParser(lastMessage.content).parse();
-        // const absoluteTimeMatches = detectAbsoluteTime(lastMessage.content, timezone);
-        const absoluteTimeMatches = [];
-
-        // Check for relative times that are less than a second.
-        // Discord doesn't display seconds in timestamps, so these are useless.
-        let hasSecondMatches = false;
-        relativeTimeMatches = relativeTimeMatches.filter((match) => {
-            if (Math.abs(match.duration) < 60) {
-                hasSecondMatches = true;
-                return false;
-            }
-            return true;
-        });
-
-        if (relativeTimeMatches.length === 0 && absoluteTimeMatches.length === 0) {
-            let description = "The last message does not contain any recognizable relative or absolute time expressions.";
-
-            if (hasSecondMatches) {
-                description += "\n\nNote: Relative times of less than a minute (e.g. '30 seconds ago') are not processed since Discord timestamps do not display seconds.";
-            }
-
-            await interaction.reply({
-                flags: MessageFlags.Ephemeral,
-                embeds: [errorEmbed(
-                    "No relative or absolute time found",
-                    description,
-                )],
-            });
-            return;
-        }
+        const relativeTimeMatches = new RelativeTimeParser(lastMessage.content).parse();
+        const absoluteTimeMatches = new AbsoluteTimeParser(lastMessage.content, timezone).parse();
 
         let content = "";
 
@@ -112,11 +99,20 @@ export const last = <ISlashCommand>{
         }
 
         const matchStrings = [];
+        const arrowRight = "\u2192";
         for (const match of relativeTimeMatches) {
-            matchStrings.push(`${match.match} \u2192 <t:${Math.floor((Date.now() / 1e3) + match.duration)}:F>`);
+            matchStrings.push(`${match.match} ${arrowRight} <t:${Math.floor((Date.now() / 1e3) + match.duration)}:F>`);
         }
         for (const match of absoluteTimeMatches) {
-            matchStrings.push(`${match.match[0]} \u2192 <t:${Math.floor(match.date.epochMilliseconds / 1e3)}:F>`);
+            const timestamps = [];
+            const timeFormats = precisionSyntaxFlags[match.precision];
+            for (const flag of timeFormats) {
+                timestamps.push(`<t:${Math.floor(match.date.epochMilliseconds / 1e3)}:${flag}>`);
+            }
+
+            matchStrings.push(`${match.match} ${arrowRight} ${timestamps.join(", ")}${
+                match.approximated ? " (approximate)" : ""
+            }`);
         }
 
         content += matchStrings.join("\n");
