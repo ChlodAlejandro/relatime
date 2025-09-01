@@ -16,7 +16,7 @@ You can run the bot as a Docker container. Data is stored in the `/app/data` dir
 docker pull ghcr.io/ChlodAlejandro/relatime:latest
 docker run -d --name relatime \
     --mount "type=bind,src=./data,dst=/app/data" \
-    -e RT_CLIENT_ID=your_id_here \
+    -e RT_DISCORD_CLIENT_ID=your_id_here \
     -e RT_DISCORD_TOKEN=your_token_here \
     --restart unless-stopped \
     ghcr.io/ChlodAlejandro/relatime:latest
