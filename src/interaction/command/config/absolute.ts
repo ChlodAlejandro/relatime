@@ -1,7 +1,6 @@
 import { ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
-import { getDb } from "../../../database/Database.ts";
+import { setUserConfig } from "../../../database/config.ts";
 import { successEmbed } from "../../../embeds/successEmbed.ts";
-import { log } from "../../../util/log.ts";
 import { ISlashSubcommand } from "../../types";
 
 export const absolute = <ISlashSubcommand>{
@@ -18,16 +17,7 @@ export const absolute = <ISlashSubcommand>{
     async execute(interaction: ChatInputCommandInteraction) {
         const enabled = interaction.options.getBoolean("enable", true);
 
-        await getDb()("config")
-            .insert({
-                cfg_user: interaction.user.id,
-                cfg_key: "absolute",
-                cfg_value: enabled ? "true" : "false",
-            })
-            .onConflict(["cfg_user", "cfg_key"])
-            .merge()
-            .then()
-            .catch(log.error);
+        await setUserConfig(interaction.user.id, "absolute", enabled ? "true" : "false");
 
         await interaction.reply({
             flags: MessageFlags.Ephemeral,

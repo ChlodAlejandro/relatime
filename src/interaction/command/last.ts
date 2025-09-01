@@ -1,9 +1,9 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
-import { getDb } from "../../database/Database.ts";
+import { getUserConfig } from "../../database/config.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
+import getTimeMatches from "../../util/getTimeMatches.ts";
 import timezoneToString from "../../util/timezoneToString.ts";
 import { ISlashCommand } from "../types.ts";
-import getTimeMatches from "./_util/getTimeMatches.ts";
 
 export const last = <ISlashCommand>{
     builder: new SlashCommandBuilder()
@@ -17,8 +17,6 @@ export const last = <ISlashCommand>{
         ),
     async execute(interaction) {
         if (!interaction.isChatInputCommand()) return;
-
-        const flags: ("SuppressNotifications" | "Ephemeral")[] = [];
 
         // Get the last message in the channel
         const messages = await interaction.channel?.messages.fetch({ limit: 10 });
@@ -49,32 +47,18 @@ export const last = <ISlashCommand>{
         }
 
         let usedInteractionUserTimezone = false;
-        const timezone: number | string | null = await getDb()("config")
-            .select("cfg_user", "cfg_value")
-            .from("config")
-            .whereIn("cfg_user", [interaction.user.id, lastMessage.author.id])
-            .andWhere("cfg_key", "timezone")
-            .then(rows => {
-                if (rows.length > 0) {
-                    let row = rows.find(r => r.cfg_user === lastMessage.author.id);
-                    if (row == null) {
-                        usedInteractionUserTimezone = true;
-                        row = rows[0];
-                    }
-
-                    return row.cfg_value.startsWith("custom:") ?
-                        row.cfg_value.replace(/^custom:/, "") :
-                        row.cfg_value.replace(/^iana:/, "");
-                } else {
-                    return null;
-                }
-            });
+        let { timezone } = await getUserConfig(lastMessage.author.id, <const>["timezone"]);
+        if (!timezone) {
+            ({ timezone } = await getUserConfig(interaction.user.id, <const>["timezone"]));
+            if (timezone) {
+                usedInteractionUserTimezone = true;
+            }
+        }
 
         let content = "";
 
         if (usedInteractionUserTimezone) {
             content += `No timezone was set for the author of the last message, so the timezone of <@${interaction.user.id}> (\`${timezoneToString(timezone)}\`) was used instead.\n\n`;
-            flags.push("SuppressNotifications");
         } else if (!timezone) {
             content += "No timezone is set for the author of the last message, so times were interpreted as UTC. You can set your timezone with `/config timezone`.\n\n";
         }
@@ -92,13 +76,12 @@ export const last = <ISlashCommand>{
         }
         content += matches!;
 
-        if (interaction.options.getBoolean("ephemeral")) {
-            flags.push("Ephemeral");
-        }
-
         await interaction.reply({
-            flags: flags,
+            flags: interaction.options.getBoolean("ephemeral") ? MessageFlags.Ephemeral : undefined,
             content: content,
+            allowedMentions: {
+                parse: [],
+            },
         });
     },
 };

@@ -1,5 +1,5 @@
-import { DurationUnit } from "../../../parsing/Duration.ts";
-import TimeParser from "../../../parsing/TimeParser.ts";
+import { DurationUnit } from "../parsing/Duration.ts";
+import TimeParser, { TimeParserMode } from "../parsing/TimeParser.ts";
 
 /**
  * Timestamp flags to use for different precision levels. Each letter generates another timestamp, joined by commas.
@@ -17,15 +17,16 @@ const precisionSyntaxFlags: Record<DurationUnit, string> = {
 
 interface TimeMatchesOptions {
     includeCode: boolean;
+    modes: TimeParserMode[]
 }
 
 export default function getTimeMatches(
     input: string,
-    timezone: string | number,
+    timezone: string,
     options: Partial<TimeMatchesOptions> = {},
 ): string | null {
     let content = "";
-    const timeMatches = new TimeParser(input, timezone).parse();
+    const timeMatches = new TimeParser(input, timezone).parse(options.modes);
 
     if (timeMatches.length === 0) {
         return null;

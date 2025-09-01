@@ -116,6 +116,18 @@ describe("TimeParser", () => {
                 const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
                 return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday + 7 }).startOfDay();
             },
+        "2 a.m.":
+            (now) => now.startOfDay().add({ hours: 2 }),
+        "11 p.m.":
+            (now) => now.startOfDay().add({ hours: 23 }),
+        "5pm":
+            (now) => now.startOfDay().add({ hours: 17 }),
+        "9 pm":
+            (now) => now.startOfDay().add({ hours: 21 }),
+        "12am":
+            (now) => now.startOfDay(),
+        "12pm":
+            (now) => now.startOfDay().add({ hours: 12 }),
         // Relative time
         "in 4 hours":
             (now) => now.add({ hours: 4 }),
@@ -167,6 +179,9 @@ describe("TimeParser", () => {
             (now) => now.add({ days: 2, hours: 4, minutes: 15 }),
         "in 2 hours 30 minutes":
             (now) => now.add({ hours: 2, minutes: 30 }),
+        // Long text
+        "just 1 asdkjashfakjsfhadfsklasjdkljasdlkj hour":
+            (now) => now.add({ hours: 1 }),
     };
 
     const timezone = "America/New_York";
@@ -420,25 +435,25 @@ describe("TimeParser", () => {
         expect(results).toHaveLength(0);
     });
 
-    it("should handle timezone offset as number", () => {
-        const parser = new TimeParser("today", 5);
-        const results = parser.parse();
-        expect(results).toHaveLength(1);
-        expect(results[0].date.timeZoneId).toBe("+05:00");
-    });
-
     it("should handle arbitrary timezones", () => {
-        const parser = new TimeParser("today", 5 + (18 / 60));
+        const parser = new TimeParser("today", "+05:18");
         const results = parser.parse();
         expect(results).toHaveLength(1);
         expect(results[0].date.timeZoneId).toBe("+05:18");
     });
 
     it("should handle negative timezone offset", () => {
-        const parser = new TimeParser("today", -8);
+        const parser = new TimeParser("today", "-08:00");
         const results = parser.parse();
         expect(results).toHaveLength(1);
         expect(results[0].date.timeZoneId).toBe("-08:00");
+    });
+
+    it("should handle 23:59", () => {
+        const parser = new TimeParser("today", "+23:59");
+        const results = parser.parse();
+        expect(results).toHaveLength(1);
+        expect(results[0].date.timeZoneId).toBe("+23:59");
     });
 
     it("edge: missing unit", () => {

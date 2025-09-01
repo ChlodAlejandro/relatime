@@ -1,6 +1,7 @@
 import { Temporal } from "temporal-polyfill";
 import cloneRegex from "../util/cloneRegex.ts";
 import combineRegex from "../util/combineRegex.ts";
+import stringMatcher from "../util/convertToStringMatch.ts";
 import { log } from "../util/log.ts";
 import {
     DurationUnit, durationUnitFullRegexes,
@@ -113,15 +114,10 @@ export default class TimeParser extends Parser {
 
     readonly timeZoneId: string;
 
-    constructor(text: string, timezone: string | number) {
+    constructor(text: string, timezone: string) {
         super(text);
 
-        this.timeZoneId = typeof timezone === "string" ? timezone : (
-            (timezone < 0 ? "-" : "+") +
-            Math.floor(Math.abs(timezone)).toString().padStart(2, "0") +
-            ":" +
-            (Math.round(Math.abs(timezone % 1) * 60)).toString().padStart(2, "0")
-        );
+        this.timeZoneId = timezone;
     }
 
     public now(): Temporal.ZonedDateTime {
@@ -132,7 +128,7 @@ export default class TimeParser extends Parser {
         const matches: (AbsoluteTimeMatch | null)[] = [];
 
         // Go through each word and see if it matches an expression we need.
-        const lastIndex = this.index;
+        let lastIndex = this.index;
         do {
             const startIndex = this.index;
             const word = this.consumeWord();
@@ -189,6 +185,7 @@ export default class TimeParser extends Parser {
                 // No progress made, consume a character to avoid infinite loops.
                 this.consume();
             }
+            lastIndex = this.index;
         } while (!this.isEmpty());
 
         return matches
@@ -197,11 +194,11 @@ export default class TimeParser extends Parser {
 
     /**
      * Consume a duration. If no duration was found, null is returned.
-     * This advances the parser's index.
      *
      * @protected
      */
     public consumeDuration(): Partial<Record<DurationUnit, number>> | null {
+        const currentIndex = this.index;
         let durationNumber: number | null;
         if (this.peekWord() === "a" || this.peekWord() === "an" || this.peekWord() === "one") {
             this.consumeWord();
@@ -221,33 +218,33 @@ export default class TimeParser extends Parser {
         const possibleUnitWord1 = this.peekRegex(/^[a-z_]+/i);
         if (!possibleUnitWord1) {
             // End of string. No unit.
+            this.seek(currentIndex);
             return null;
         }
         // Test if the word is actually a unit.
         if (
-            !possibleUnitWord1.match(durationUnitRegexCaseInsensitive) &&
-            !possibleUnitWord1.match(durationUnitRegexCaseSensitive)
+            !possibleUnitWord1.match(stringMatcher(durationUnitRegexCaseInsensitive)) &&
+            !possibleUnitWord1.match(stringMatcher(durationUnitRegexCaseSensitive))
         ) {
+            this.consumeWord();
             // Not a unit. Try peeking forward again.
             // This is to catch cases like "give me 5 fucking minutes".
             // Too considerate? I don't care.
             const possibleUnitWord2 = this.peekRegex(/^[a-z_]+/i);
             if (!possibleUnitWord2) {
                 // End of string. No unit.
+                this.seek(currentIndex);
                 return null;
             }
             if (
-                !possibleUnitWord2.match(durationUnitRegexCaseInsensitive) &&
-                !possibleUnitWord2.match(durationUnitRegexCaseSensitive)
+                !possibleUnitWord2.match(stringMatcher(durationUnitRegexCaseInsensitive)) &&
+                !possibleUnitWord2.match(stringMatcher(durationUnitRegexCaseSensitive))
             ) {
                 // Still not a unit. Give up.
+                this.seek(currentIndex);
                 return null;
-            } else {
-                // Unit found. Consume the first word (which is not a unit) and continue.
-                this.consumeWord();
             }
-
-            return null;
+            // Unit found. Consume the first word (which is not a unit) and continue.
         }
 
         // Unit found. Consume it.
@@ -264,6 +261,7 @@ export default class TimeParser extends Parser {
         }
         if (!duration) {
             // Somehow no unit matched. Give up.
+            this.seek(currentIndex);
             return null;
         }
 
@@ -315,6 +313,9 @@ export default class TimeParser extends Parser {
         let hours = parseInt(match[1], 10);
         let minutes = match[2] ? parseInt(match[2], 10) : 0;
         let seconds = match[3] ? parseInt(match[3], 10) : 0;
+
+        // Get rid of possible whitespace.
+        this.consumeWhitespace();
 
         // Detect meridians
         const meridian = this.peekRegex(TimeParser.MERIDIAN_REGEX);

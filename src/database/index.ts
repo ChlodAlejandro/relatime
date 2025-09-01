@@ -1,15 +1,25 @@
 import * as fs from "fs/promises";
 import knex, { Knex } from "knex";
 
-const DB_PATH = process.env.RT_DB_PATH || "./relatime.db";
+const DB_PATH = process.env.RT_DB_PATH || "./data/relatime.db";
 
 const tables = {
     config: {
         builder: (table: Knex.CreateTableBuilder) => {
-            table.string("cfg_user", 22);
-            table.string("cfg_key", 32);
-            table.string("cfg_value", 256);
+            table.string("cfg_user", 22)
+                .notNullable();
+            table.string("cfg_key", 32)
+                .notNullable();
+            table.string("cfg_value", 256)
+                .notNullable();
             table.primary(["cfg_user", "cfg_key"]);
+        },
+    },
+    tracked_messages: {
+        builder: (table: Knex.CreateTableBuilder) => {
+            table.string("tm_id", 22)
+                .primary()
+                .notNullable();
         },
     },
 };
@@ -34,7 +44,11 @@ export async function dbExists(db: Knex) {
             throw e;
         }
     }
-    return await db.schema.hasTable("config");
+    for (const tableName of Object.keys(tables)) {
+        const exists = await db.schema.hasTable(tableName);
+        if (!exists) return false;
+    }
+    return true;
 }
 
 export function getDb() {

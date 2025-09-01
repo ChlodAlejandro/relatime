@@ -4,6 +4,6 @@ export interface CustomTimezone {
     standard: { offset: number };
 }
 
-export function isCustomTimezone(tz: any): tz is CustomTimezone {
+export function isCustomTimezone(tz: unknown): tz is CustomTimezone {
     return (tz as CustomTimezone)._custom === true;
 }

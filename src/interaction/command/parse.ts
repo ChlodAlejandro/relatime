@@ -1,9 +1,10 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
-import { getDb } from "../../database/Database.ts";
+import { getDb } from "../../database";
+import { getUserConfig } from "../../database/config.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
 import { successEmbed } from "../../embeds/successEmbed.ts";
 import { ISlashCommand } from "../types.ts";
-import getTimeMatches from "./_util/getTimeMatches.ts";
+import getTimeMatches from "../../util/getTimeMatches.ts";
 
 export const parse = <ISlashCommand>{
     builder: new SlashCommandBuilder()
@@ -24,21 +25,7 @@ export const parse = <ISlashCommand>{
     async execute(interaction) {
         if (!interaction.isChatInputCommand()) return;
 
-        const timezone: number | string | null = await getDb()("config")
-            .select("cfg_user", "cfg_value")
-            .from("config")
-            .where("cfg_user", interaction.user.id)
-            .andWhere("cfg_key", "timezone")
-            .then(rows => {
-                if (rows.length > 0) {
-                    const row = rows[0];
-                    return row.cfg_value.startsWith("custom:") ?
-                        row.cfg_value.replace(/^custom:/, "") :
-                        row.cfg_value.replace(/^iana:/, "");
-                } else {
-                    return null;
-                }
-            });
+        const { timezone } = await getUserConfig(interaction.user.id, <const>["timezone"]);
 
         let content = "";
 

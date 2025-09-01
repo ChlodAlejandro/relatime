@@ -13,6 +13,6 @@ export const log = winston.createLogger({
                 winston.format.printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}`),
             ),
         }),
-        new winston.transports.File({ filename: "relatime.log" }),
+        new winston.transports.File({ filename: process.env.RT_LOG_PATH || "./data/relatime.log" }),
     ],
 });

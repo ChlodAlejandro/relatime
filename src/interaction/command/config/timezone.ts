@@ -1,11 +1,10 @@
 import { ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
 import soft, { DisplayFormat } from "timezone-soft";
-import { getDb } from "../../../database/Database.ts";
+import { setUserConfig } from "../../../database/config.ts";
 import { errorEmbed } from "../../../embeds/errorEmbed";
 import { successEmbed } from "../../../embeds/successEmbed";
 import dateToString from "../../../util/dateToString";
 import { CustomTimezone, isCustomTimezone } from "../../../util/isCustomTimezone";
-import { log } from "../../../util/log.ts";
 import offsetToString from "../../../util/offsetToString";
 import timezoneToString from "../../../util/timezoneToString";
 import { ISlashSubcommand } from "../../types";
@@ -26,9 +25,9 @@ export const timezone = <ISlashSubcommand>{
 
         let parsed: (DisplayFormat)[] | CustomTimezone = soft(tz);
 
-        if (!parsed) {
+        if (parsed.length === 0) {
             // Attempt to parse out a time offset
-            const offsetMatch = tz.match(/^(?!UTC)?([+-])?(\d{1,2})(?!:(\d{1,2}))?$/i);
+            const offsetMatch = tz.match(/^(?:UTC|UCT|GMT)?([+-])?(\d{1,2})(?::(\d{1,2}))?$/i);
 
             if (offsetMatch) {
                 const offsetSign = (offsetMatch[1] === "-" ? -1 : 1);
@@ -44,7 +43,7 @@ export const timezone = <ISlashSubcommand>{
             }
         }
 
-        const privacyWarning = "\n\n**IMPORTANT:** Your timezone is not private and others may be able to guess your vague location based on your timezone or the times sent by the bot. If you are concerned about your privacy, consider setting your timezone to UTC and performing timezone conversions manually.";
+        const privacyWarning = "\n\n-# **IMPORTANT:** Your timezone is not private and others may be able to guess your vague location based on your timezone or the times sent by the bot. If you are concerned about your privacy, consider setting your timezone to UTC and performing timezone conversions manually.";
 
         if (!parsed) {
             await interaction.reply({
@@ -75,18 +74,10 @@ export const timezone = <ISlashSubcommand>{
 
             description += privacyWarning;
 
-            await getDb()("config")
-                .insert({
-                    cfg_user: interaction.user.id,
-                    cfg_key: "timezone",
-                    cfg_value: isCustom ?
-                        (`custom:${timezone.standard.offset}`) :
-                        (`iana:${timezone.iana}`),
-                })
-                .onConflict(["cfg_user", "cfg_key"])
-                .merge()
-                .then()
-                .catch(log.error);
+            await setUserConfig(interaction.user.id, "timezone", isCustom ?
+                timezone.name.replace(/^UTC+/, "") :
+                timezone.iana,
+            );
 
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
@@ -122,17 +113,7 @@ export const timezone = <ISlashSubcommand>{
                 dateToString(new Date(), offset, interaction.locale, { dateStyle: "long", timeStyle: "medium" })
             }${privacyWarning}`;
 
-            await getDb()("config")
-                .insert({
-                    cfg_user: interaction.user.id,
-                    cfg_key: "timezone",
-                    cfg_value: "iana:" + timezone.iana,
-                })
-                .onConflict(["cfg_user", "cfg_key"])
-                .merge()
-                .then()
-                .catch(log.error);
-
+            await setUserConfig(interaction.user.id, "timezone", "iana:" + timezone.iana);
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [
