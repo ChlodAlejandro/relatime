@@ -181,7 +181,12 @@ export default class TimeParser extends Parser {
             }
 
             if (lastIndex === this.index) {
-                log.warn("Parser did not advance!");
+                if (process.env.NODE_ENV !== "production") {
+                    log.warn(
+                        "Parser did not advance!",
+                        { source: this.source, working: this.working, index: this.index },
+                    );
+                }
                 // No progress made, consume a character to avoid infinite loops.
                 this.consume();
             }
@@ -1391,18 +1396,25 @@ export default class TimeParser extends Parser {
      */
     protected detectOsuDurations(
         matches: AbsoluteTimeMatch[],
-        word: string,
+        _word: string,
         startIndex: number,
     ): boolean {
-        if (word !== "in") {
-            return null;
+        const currentIndex = this.index;
+        if (this.consumeWord() !== "in") {
+            this.seek(currentIndex);
+            return false;
         }
 
         const numbers1 = this.consumeNumbers();
+        if (!numbers1) {
+            this.seek(currentIndex);
+            return false;
+        }
         const numbers1EndIndex = this.index;
         const delim = this.consumePunctuation();
         if (!delim || !delim.startsWith(",")) {
             // Not a comma. Discard.
+            this.seek(currentIndex);
             return false;
         }
         // Comma found, continue.
@@ -1435,6 +1447,7 @@ export default class TimeParser extends Parser {
             });
         } else {
             // Second part not matched
+            this.seek(currentIndex);
             return false;
         }
     }

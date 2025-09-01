@@ -449,11 +449,23 @@ describe("TimeParser", () => {
         expect(results[0].date.timeZoneId).toBe("-08:00");
     });
 
-    it("should handle 23:59", () => {
+    it("should handle timezone offset 23:59", () => {
         const parser = new TimeParser("today", "+23:59");
         const results = parser.parse();
         expect(results).toHaveLength(1);
         expect(results[0].date.timeZoneId).toBe("+23:59");
+    });
+
+    it("match in 15, invites in 10", () => {
+        const parser = new TimeParser("match in 15, invites in 10", timezone);
+        const results = parser.parse();
+        expect(results).toHaveLength(2);
+        expect(results[0].match).toBe("match in 15");
+        expect(results[0].date.toInstant().toString(stringifyOptions))
+            .toBe(now.add({ minutes: 15 }).toInstant().toString(stringifyOptions));
+        expect(results[1].match).toBe("invites in 10");
+        expect(results[1].date.toInstant().toString(stringifyOptions))
+            .toBe(now.add({ minutes: 10 }).toInstant().toString(stringifyOptions));
     });
 
     it("edge: missing unit", () => {
