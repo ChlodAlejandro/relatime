@@ -36,7 +36,7 @@ export const parse = <ISlashCommand>{
         const printMode = interaction.options.getBoolean("print");
 
         const matches = getTimeMatches(interaction.options.getString("text"), timezone, {
-            includeCode: !printMode,
+            includeCode: printMode,
         });
         if (!matches) {
             interaction.reply({
