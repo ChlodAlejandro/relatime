@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
 import soft, { DisplayFormat } from "timezone-soft";
-import { setUserConfig } from "../../../database/config.ts";
+import { getUserConfig, setUserConfig } from "../../../database/config.ts";
 import { errorEmbed } from "../../../embeds/errorEmbed";
 import { successEmbed } from "../../../embeds/successEmbed";
 import dateToString from "../../../util/dateToString";
@@ -18,10 +18,27 @@ export const timezone = <ISlashSubcommand>{
                 option
                     .setName("timezone")
                     .setDescription('Enter your timezone (e.g., "America/New York", "London", "UTC+9")')
-                    .setRequired(true),
+                    .setRequired(false),
             ),
     async execute(interaction: ChatInputCommandInteraction) {
-        const tz = interaction.options.getString("timezone", true);
+        const tz = interaction.options.getString("timezone");
+        if (tz == null) {
+            const currentValue = await getUserConfig(interaction.user.id, <const>["timezone"]);
+            const value = currentValue == null ?
+                "unset" : `\`${timezone}\``;
+
+            await interaction.reply({
+                flags: MessageFlags.Ephemeral,
+                embeds: [successEmbed(
+                    "Timezone configuration",
+                    "Set your local timezone.",
+                ).addFields({
+                    name: "Current value",
+                    value: value,
+                })],
+            });
+            return;
+        }
 
         let parsed: (DisplayFormat)[] | CustomTimezone = soft(tz);
 

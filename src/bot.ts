@@ -13,8 +13,8 @@ dotenv.config({
     path: path.join(/[\\/]src[\\/]?$/.test(cwd) ? path.join(cwd, "..") : cwd, ".env"),
     encoding: "utf8",
     override: true,
-    // quiet: true,
-    debug: true,
+    quiet: process.env.NODE_ENV === "production",
+    debug: process.env.NODE_ENV !== "production",
 });
 
 // Against all odds, we must be in UTC.
@@ -73,4 +73,5 @@ process.env.TZ = "Etc/UTC";
     log.info("Logging in to Discord...");
     // Log in to Discord with your client's token
     await client.login(process.env.RT_DISCORD_TOKEN);
+
 })();

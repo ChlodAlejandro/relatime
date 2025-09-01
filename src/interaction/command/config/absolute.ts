@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
-import { setUserConfig } from "../../../database/config.ts";
+import { getUserConfig, setUserConfig } from "../../../database/config.ts";
 import { successEmbed } from "../../../embeds/successEmbed.ts";
 import { ISlashSubcommand } from "../../types";
 
@@ -12,10 +12,28 @@ export const absolute = <ISlashSubcommand>{
                 option
                     .setName("enable")
                     .setDescription("Set to true to enable, false to disable.")
-                    .setRequired(true),
+                    .setRequired(false),
             ),
     async execute(interaction: ChatInputCommandInteraction) {
-        const enabled = interaction.options.getBoolean("enable", true);
+        const enabled = interaction.options.getBoolean("enable");
+        if (enabled == null) {
+            const currentValue = await getUserConfig(interaction.user.id, <const>["absolute"]);
+            const value = currentValue == null ?
+                "unset (disabled by default)" :
+                (currentValue.absolute === "true" ? "enabled" : "disabled");
+
+            await interaction.reply({
+                flags: MessageFlags.Ephemeral,
+                embeds: [successEmbed(
+                    "Absolute timestamps configuration",
+                    'Enables replying with timestamps when an absolute time (e.g. "9pm", "Monday at 5pm") is mentioned.',
+                ).addFields({
+                    name: "Current value",
+                    value: value,
+                })],
+            });
+            return;
+        }
 
         await setUserConfig(interaction.user.id, "absolute", enabled ? "true" : "false");
 
