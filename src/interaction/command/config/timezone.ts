@@ -44,6 +44,8 @@ export const timezone = <ISlashSubcommand>{
             }
         }
 
+        const privacyWarning = "\n\n**IMPORTANT:** Your timezone is not private and others may be able to guess your vague location based on your timezone or the times sent by the bot. If you are concerned about your privacy, consider setting your timezone to UTC and performing timezone conversions manually.";
+
         if (!parsed) {
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
@@ -70,6 +72,8 @@ export const timezone = <ISlashSubcommand>{
             if (isCustom) {
                 description += "\n\n**NOTE:** UTC offsets do not account for daylight savings time. If your location uses daylight savings, consider using a TZ identifier instead (e.g., \"America/New_York\" instead of \"-05:00\").";
             }
+
+            description += privacyWarning;
 
             await getDb()("config")
                 .insert({
@@ -116,7 +120,7 @@ export const timezone = <ISlashSubcommand>{
                 timeString
             }. The current time there is ${
                 dateToString(new Date(), offset, interaction.locale, { dateStyle: "long", timeStyle: "medium" })
-            }`;
+            }${privacyWarning}`;
 
             await getDb()("config")
                 .insert({

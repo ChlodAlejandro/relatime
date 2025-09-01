@@ -1,24 +1,9 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import { getDb } from "../../database/Database.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
-import { DurationUnit } from "../../parsing/Duration.ts";
-import TimeParser from "../../parsing/TimeParser.ts";
 import timezoneToString from "../../util/timezoneToString.ts";
 import { ISlashCommand } from "../types.ts";
-
-/**
- * Timestamp flags to use for different precision levels. Each letter generates another timestamp, joined by commas.
- * @see https://discord.com/developers/docs/reference#message-formatting-timestamp-styles
- */
-const precisionSyntaxFlags: Record<DurationUnit, string> = {
-    second: "DT",
-    minute: "f",
-    hour: "f",
-    day: "D",
-    week: "D",
-    month: "D",
-    year: "D",
-};
+import getTimeMatches from "./_util/getTimeMatches.ts";
 
 export const last = <ISlashCommand>{
     builder: new SlashCommandBuilder()
@@ -85,8 +70,6 @@ export const last = <ISlashCommand>{
                 }
             });
 
-        const timeMatches = new TimeParser(lastMessage.content, timezone).parse();
-
         let content = "";
 
         if (usedInteractionUserTimezone) {
@@ -96,26 +79,18 @@ export const last = <ISlashCommand>{
             content += "No timezone is set for the author of the last message, so times were interpreted as UTC. You can set your timezone with `/config timezone`.\n\n";
         }
 
-        const matchStrings = [];
-        const arrowRight = "\u2192";
-        for (const match of timeMatches) {
-            const timestamps = [];
-            const timeFormats = precisionSyntaxFlags[match.precision];
-            const epoch = Math.floor(match.date.epochMilliseconds / 1e3);
-            for (const flag of timeFormats) {
-                timestamps.push(`<t:${epoch}:${flag}>`);
-            }
-
-            const notes = [];
-            if (match.approximated) notes.push("approximated");
-            if (match.relative) notes.push(`<t:${epoch}:R>`);
-
-            matchStrings.push(`${match.match} ${arrowRight} ${timestamps.join(", ")}${
-                notes.length > 0 ? ` (${notes.join("; ")})` : ""
-            }`);
+        const matches = getTimeMatches(lastMessage.content, timezone);
+        if (!matches) {
+            interaction.reply({
+                flags: MessageFlags.Ephemeral,
+                embeds: [errorEmbed(
+                    "No times found",
+                    "Could not find any relative or absolute times in the last message.",
+                )],
+            });
+            return;
         }
-
-        content += matchStrings.join("\n");
+        content += matches!;
 
         if (interaction.options.getBoolean("ephemeral")) {
             flags.push("Ephemeral");
