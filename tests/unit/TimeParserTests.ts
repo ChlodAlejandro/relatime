@@ -173,6 +173,10 @@ describe("TimeParser", () => {
     const stringifyOptions = <const>{ timeZone: "UTC", smallestUnit: "second" };
     const now = Temporal.Now.zonedDateTimeISO(timezone);
 
+    jest.spyOn(TimeParser.prototype, "now").mockImplementation(function (this: TimeParser) {
+        return this.timeZoneId === timezone ? now : now.withTimeZone(this.timeZoneId);
+    });
+
     test.each(Object.keys(simpleTests))("should parse '%s' correctly", (input) => {
         const parser = new TimeParser(input, timezone);
         const results = parser.parse();

@@ -106,7 +106,7 @@ export default class TimeParser extends Parser {
     protected static readonly SPELLED_DURATION_REGEX =
         /^(?:an?|one)$/;
 
-    private readonly timeZoneId: string;
+    readonly timeZoneId: string;
 
     constructor(text: string, timezone: string | number) {
         super(text);
