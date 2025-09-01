@@ -1,6 +1,31 @@
 {
+    "private": true,
+    "name": "relatime",
+    "version": "0.0.0",
+    "description": "Converts relative time in chat to Discord timestamps based on the user's timezone.",
+    "main": "src/bot.ts",
+    "directories": {
+        "test": "tests"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ChlodAlejandro/relatime.git"
+    },
+    "keywords": [
+        "discord",
+        "bot",
+        "time",
+        "timezone"
+    ],
+    "author": "Chlod Alejandro <chlod@chlod.net>",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/ChlodAlejandro/relatime/issues"
+    },
+    "homepage": "https://github.com/ChlodAlejandro/relatime#readme",
     "scripts": {
-        "dev": "node -r ts-node/register src/bot.ts"
+        "run": "ts-node --transpile-only src/bot.ts",
+        "dev": "ts-node src/bot.ts"
     },
     "dependencies": {
         "better-sqlite3": "^12.2.0",
