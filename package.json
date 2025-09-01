@@ -25,6 +25,7 @@
     "homepage": "https://github.com/ChlodAlejandro/relatime#readme",
     "scripts": {
         "start": "ts-node --transpile-only src/bot.ts",
+        "test": "jest",
         "dev": "ts-node src/bot.ts"
     },
     "dependencies": {
