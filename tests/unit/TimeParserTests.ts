@@ -116,6 +116,21 @@ describe("TimeParser", () => {
                 const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
                 return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday + 7 }).startOfDay();
             },
+        "Monday at 5 pm":
+            (now) => {
+                const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
+                return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday }).startOfDay().add({ hours: 17 });
+            },
+        "next Monday at 5 pm":
+            (now) => {
+                const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
+                return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday }).startOfDay().add({ hours: 17 });
+            },
+        "Monday 5 pm":
+            (now) => {
+                const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
+                return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday }).startOfDay().add({ hours: 17 });
+            },
         "2 a.m.":
             (now) => now.startOfDay().add({ hours: 2 }),
         "11 p.m.":

@@ -148,6 +148,8 @@ export default class TimeParser extends Parser {
                     continue;
                 if (this.detectLastWeekdayOfMonth(matches, word, startIndex))
                     continue;
+                if (this.detectWeekdayAndAbsoluteTime(matches, word, startIndex))
+                    continue;
                 if (this.detectWeekdayAndRelativeTime(matches, word, startIndex))
                     continue;
                 if (this.detectOrdinalUnit(matches, word, startIndex))
@@ -168,6 +170,8 @@ export default class TimeParser extends Parser {
                     continue;
             }
             if (modes.includes(TimeParserMode.Relative)) {
+                if (this.detectRelativeWeekdayAndAbsoluteTime(matches, word, startIndex))
+                    continue;
                 if (this.detectRelativeWeekday(matches, word, startIndex))
                     continue;
                 if (this.detectRelativeUnit(matches, word, startIndex))
@@ -1103,6 +1107,10 @@ export default class TimeParser extends Parser {
             const daysSinceWeekday = (now.dayOfWeek + 7 - weekday) % 7;
             const targetDate = now.subtract({ days: daysSinceWeekday === 0 ? 7 : daysSinceWeekday });
             return targetDate.startOfDay();
+        } else if (TimeParser.THIS_REGEX.test(relation)) {
+            const daysUntilWeekday = (weekday + 7 - now.dayOfWeek) % 7;
+            const targetDate = now.add({ days: daysUntilWeekday });
+            return targetDate.startOfDay();
         } else {
             return null;
         }
@@ -1138,6 +1146,47 @@ export default class TimeParser extends Parser {
             });
             return true;
         }
+    }
+
+    protected detectRelativeWeekdayAndAbsoluteTime(
+        matches: AbsoluteTimeMatch[],
+        word: string,
+        startIndex: number,
+    ): boolean {
+        if (!/^((next|(up)coming|this)|(last|previous|prior))$/i.test(word)) {
+            return false;
+        }
+
+        const currentIndex = this.index;
+
+        const weekday = this.consumeWeekday();
+        if (weekday == null) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        const date = this.getDateFromRelativeWeekday(weekday, word);
+        if (!date) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        if (/^(on|at|in)$/i.test(this.peekWord())) {
+            // Cut out the preposition.
+            this.consumeWord();
+        }
+
+        const timeOfDay = this.consumeTimeOfDay();
+        if (!timeOfDay) {
+            this.seek(currentIndex);
+            return false;
+        }
+        matches.push({
+            match: this.source.substring(startIndex, this.index).trim(),
+            date: date.add(timeOfDay),
+            precision: "day",
+        });
+        return true;
     }
 
     protected detectRelativeUnit(
@@ -1226,6 +1275,44 @@ export default class TimeParser extends Parser {
                 precision: "day",
             });
         }
+        return true;
+    }
+
+    protected detectWeekdayAndAbsoluteTime(
+        matches: AbsoluteTimeMatch[],
+        word: string,
+        startIndex: number,
+    ): boolean {
+        if (!TimeParser.WEEKDAY_DETECTION_REGEX.test(word)) {
+            // We want to return early here to avoid matching things like normal "s" characters.
+            // We only ever want to match on explicit weekdays.
+            return false;
+        }
+
+        const currentIndex = this.index;
+        this.seek(startIndex);
+        const weekday = this.consumeWeekday();
+        if (weekday == null) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        if (/^(on|at|in)$/i.test(this.peekWord())) {
+            // Cut out the preposition.
+            this.consumeWord();
+        }
+
+        const timeOfDay = this.consumeTimeOfDay();
+        if (!timeOfDay) {
+            this.seek(currentIndex);
+            return false;
+        }
+        const date = this.getDateFromRelativeWeekday(weekday, "this");
+        matches.push({
+            match: this.source.substring(startIndex, this.index).trim(),
+            date: date.add(timeOfDay),
+            precision: "day",
+        });
         return true;
     }
 
@@ -1390,7 +1477,7 @@ export default class TimeParser extends Parser {
      * minutes are implied.
      *
      * @param matches
-     * @param word
+     * @param _word
      * @param startIndex
      * @protected
      */
