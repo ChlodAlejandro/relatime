@@ -24,7 +24,7 @@ docker run -d --name relatime \
 
 You can also clone the repository and run it with `ts-node`.
 ```bash
-git clone https://github.com/ChlodAlejandro/relatime.git
+git clone https://github.com/chlodalejandro/relatime.git
 cd relatime
 npm install
 npm run start
