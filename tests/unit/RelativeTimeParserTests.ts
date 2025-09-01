@@ -1,6 +1,6 @@
 import { RelativeTimeParser } from "../../src/parsing/RelativeTimeParser.ts";
 
-describe("RelativeTimeParser tests", () => {
+describe("RelativeTimeParser", () => {
 
     const simpleTests = {
         // in <duration>

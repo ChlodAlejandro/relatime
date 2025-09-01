@@ -1,5 +1,6 @@
 import { Temporal } from "temporal-polyfill";
 import cloneRegex from "../util/cloneRegex.ts";
+import combineRegex from "../util/combineRegex.ts";
 import {
     DurationUnit, durationUnitFullRegexes,
     durationUnitRegexCaseInsensitive,
@@ -11,8 +12,50 @@ import Parser from "./Parser.ts";
 
 export default class TimeParser extends Parser {
 
-    private static readonly TIME_REGEX = /^(\d{1,2})(:\d{1,2})?(:\d{1,2})?/;
+    // Matching here is somewhat strict to avoid accidentally matching ratios (e.g. "1:1", "100:1").
+    // Also discards the result if there's an extra number at any point after any unit (e.g. "1:100pm").
+    private static readonly TIME_REGEX = /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?(?!\d)/;
     private static readonly MERIDIAN_REGEX = /^(a\.?m\.?|p\.?m\.?)/i;
+    private static readonly MONTH_REGEXES = {
+        1: /^jan?(uary)?$/i,
+        2: /^fe?b?(r?uary)?$/i,
+        3: /^mar(ch)?$/i,
+        4: /^apr?(il)?$/i,
+        5: /^may$/i,
+        6: /^june?$/i,
+        7: /^july?$/i,
+        8: /^aug?(ust)?$/i,
+        9: /^se?p?(t?(embe?r)?)?$/i,
+        10: /^oc?t?(o(be?r)?)?$/i,
+        11: /^no?v?(embe?r)?$/i,
+        12: /^de?c?(embe?r)?$/i,
+    };
+    private static readonly MONTH_REGEX = combineRegex(Object.values(TimeParser.MONTH_REGEXES), {
+        trimStart: /\^/,
+        trimEnd: /\$/,
+        prepend: "^",
+        append: "$",
+    });
+    private static readonly WEEKDAY_REGEXES = {
+        0: /^su?n?d?a?y?$/i,
+        1: /^mo?n?d?a?y?$/i,
+        2: /^tu?e?s?d?a?y?$/i,
+        3: /^we?d?n?e?s?d?a?y?$/i,
+        4: /^thu?r?s?d?a?y?$/i,
+        5: /^fr?i?d?a?y?$/i,
+        6: /^sat?u?r?d?a?y?$/i,
+    };
+    private static readonly WEEKDAY_REGEX = combineRegex(Object.values(TimeParser.WEEKDAY_REGEXES), {
+        trimStart: /\^/,
+        trimEnd: /\$/,
+        prepend: "^",
+        append: "$",
+    });
+    private static readonly PREVIOUS_REGEX = /^(last|previous|prior|precee?ding)$/i;
+    private static readonly THIS_REGEX = /^(this|now|current)$/i;
+    private static readonly NEXT_REGEX = /^(next|following|succeeding)$/i;
+    private static readonly BEFORE_REGEX = /^(before|prior)$/i;
+    private static readonly AFTER_REGEX = /^(after|following)$/i;
 
     /**
      * Consume a duration. If no duration was found, null is returned.
@@ -124,17 +167,16 @@ export default class TimeParser extends Parser {
      * @protected
      */
     protected consumeExactTimeOfDay(): null | { days: number, hours: number, minutes: number, seconds: number } {
-        const match = this.consumeRegex(TimeParser.TIME_REGEX);
-        if (!match) {
+        const textMatch = this.consumeRegex(TimeParser.TIME_REGEX);
+        if (!textMatch) {
             return null;
         }
 
+        const match = textMatch.match(TimeParser.TIME_REGEX);
         let days = 0;
         let hours = parseInt(match[1], 10);
-        let minutes = match[2] ? parseInt(match[2].slice(1), 10) : 0;
-        let seconds = match[3] ? parseInt(match[3].slice(1), 10) : 0;
-
-        this.consumeWhitespace();
+        let minutes = match[2] ? parseInt(match[2], 10) : 0;
+        let seconds = match[3] ? parseInt(match[3], 10) : 0;
 
         // Detect meridians
         const meridian = this.peekRegex(TimeParser.MERIDIAN_REGEX);
@@ -214,9 +256,22 @@ export default class TimeParser extends Parser {
             this.seek(startIndex);
         }
 
-        const relative = this.consumeRelativeMonthYear(timeZoneId);
+        // Is there a "the" here? We might want to cut it out.
+        // This is to support "of the current year" or "of the next month".
+        if (/^the$/.test(this.peekWord().toLowerCase())) {
+            this.consumeWord();
+        }
+
+        const relative = this.consumeRelativeMonth(timeZoneId);
         if (relative) {
             return { time: relative, precision: "month" };
+        } else {
+            this.seek(startIndex);
+        }
+
+        const afterRelative = this.consumeMonthAfterRelative(timeZoneId);
+        if (afterRelative) {
+            return { time: afterRelative, precision: "month" };
         } else {
             this.seek(startIndex);
         }
@@ -232,55 +287,100 @@ export default class TimeParser extends Parser {
         const nextWord = this.consumeWord();
 
         if (/^\d+$/.test(nextWord)) {
-            // This is a year only.
-            return {
-                time: Temporal.ZonedDateTime.from({
-                    timeZone: timeZoneId,
-                    year: +nextWord,
-                    month: 1,
-                    day: 1,
-                }),
-                precision: "year",
-            };
-        } else if (/^\d+$/.test(this.peekWord())) {
+            // This is a year. Check if a month succeeds it.
+            if (TimeParser.MONTH_REGEX.test(this.peekWord())) {
+                // This is a month-year pair, but in the wrong order.
+                // First extract the month.
+
+                const monthWord = this.consumeWord();
+                let month: number;
+                for (const monthNum in TimeParser.MONTH_REGEXES) {
+                    if (TimeParser.MONTH_REGEXES[monthNum].test(monthWord)) {
+                        // Valid month found.
+                        month = +monthNum;
+                        break;
+                    }
+                }
+                if (!month) {
+                    // Not a valid month.
+                    return null;
+                }
+
+                return {
+                    time: Temporal.ZonedDateTime.from({
+                        timeZone: timeZoneId,
+                        year: +nextWord,
+                        month: month,
+                        day: 1,
+                    }),
+                    precision: "month",
+                };
+            } else {
+                return {
+                    time: Temporal.ZonedDateTime.from({
+                        timeZone: timeZoneId,
+                        year: +nextWord,
+                        month: 1,
+                        day: 1,
+                    }),
+                    precision: "year",
+                };
+            }
+        } else if (/^\d+(?!,\s*\d+)$/.test(this.peekWord())) {
+            // This regex has a negative lookahead to avoid matching full dates (August 1, 2025).
             // The next word is a year. This might be a month-year pair.
-            const month = nextWord;
+            const monthWord = nextWord;
             const year = this.consumeWord();
 
             if (!year) {
                 return null;
             }
 
-            // We're forced to use Date here because Temporal doesn't have month name parsing.
-            // We'll immediately convert it back to Temporal afterward.
-            const parsed = new Date(`${month} ${year}`);
-            if (isNaN(parsed.getTime())) {
-                // Not a valid month (or maybe year).
+            let month: number;
+            for (const monthNum in TimeParser.MONTH_REGEXES) {
+                if (TimeParser.MONTH_REGEXES[monthNum].test(monthWord)) {
+                    // Valid month found.
+                    month = +monthNum;
+                    break;
+                }
+            }
+            if (!month) {
+                // Not a valid month.
                 return null;
             }
 
             return {
                 time: Temporal.ZonedDateTime.from({
                     timeZone: timeZoneId,
-                    year: parsed.getFullYear(),
-                    month: parsed.getMonth() + 1,
+                    year: parseInt(year, 10),
+                    month: month,
                     day: 1,
                 }),
                 precision: "month",
             };
         } else {
-            // This could be a month. Let's try to parse it with Date.
-            // We're forced to use Date here because Temporal doesn't have month name parsing.
-            // We'll immediately convert it back to Temporal afterward.
-            const parsed = new Date(`${nextWord} ${new Date().getFullYear()}`);
-            if (isNaN(parsed.getTime())) {
+            // This could be a month. Test it with a quick RegEx.
+            if (!TimeParser.MONTH_REGEX.test(nextWord)) {
+                return null;
+            }
+
+            // This is a month. Let's find out which month exactly.
+            let month: number;
+            for (const monthNum in TimeParser.MONTH_REGEXES) {
+                if (TimeParser.MONTH_REGEXES[monthNum].test(nextWord)) {
+                    // Valid month found.
+                    month = +monthNum;
+                    break;
+                }
+            }
+            if (!month) {
                 // Not a valid month.
                 return null;
             }
 
             return {
                 time: Temporal.Now.zonedDateTimeISO(timeZoneId)
-                    .with({ month: parsed.getMonth() + 1, day: 1 })
+                    .with({ month, day: 1 })
                     .startOfDay(),
                 precision: "month",
             };
@@ -291,7 +391,7 @@ export default class TimeParser extends Parser {
      * This does NOT reset the parser's index on failure. Use {@link consumeMonthYear} instead.
      * @protected
      */
-    protected consumeRelativeMonthYear(timeZoneId: string): null | Temporal.ZonedDateTime {
+    protected consumeRelativeMonth(timeZoneId: string): null | Temporal.ZonedDateTime {
         const word = this.consumeWord();
         if (!word) {
             return null;
@@ -313,16 +413,65 @@ export default class TimeParser extends Parser {
         }
 
         const now = Temporal.Now.zonedDateTimeISO(timeZoneId);
-        if (word.toLowerCase() === "next") {
-            now.add({ [unit]: 1 });
-        } else if (word.toLowerCase() === "last" || word.toLowerCase() === "previous") {
-            now.subtract({ [unit]: 1 });
-        } else if (word.toLowerCase() !== "this") {
-            // No matching word.
+        if (TimeParser.NEXT_REGEX.test(word.toLowerCase())) {
+            return now.add({ [unit]: 1 });
+        } else if (TimeParser.PREVIOUS_REGEX.test(word.toLowerCase())) {
+            return now.subtract({ [unit]: 1 });
+        } else if (TimeParser.THIS_REGEX.test(word.toLowerCase())) {
+            // Just return as-is.
+            return now;
+        }
+        return null;
+    }
+
+    /**
+     * This does NOT reset the parser's index on failure. Use {@link consumeMonthYear} instead.
+     * @protected
+     */
+    protected consumeMonthAfterRelative(timeZoneId: string): null | Temporal.ZonedDateTime {
+        const word = this.consumeWord();
+        if (!word) {
             return null;
         }
 
-        return now;
+        let unit;
+        if (durationUnitRegexes.month.test(word)) {
+            unit = "months";
+        } else if (durationUnitRegexes.year.test(word)) {
+            unit = "years";
+        } else {
+            // The word is not "month", "year", or their variants. Discard.
+            return null;
+        }
+
+        // Not a "month after now" expression.
+        const beforeOrAfter = this.consumeWord();
+        if (!beforeOrAfter) {
+            return null;
+        }
+
+        let reference: Temporal.ZonedDateTime;
+        if (TimeParser.AFTER_REGEX.test(beforeOrAfter)) {
+            reference = Temporal.Now.zonedDateTimeISO(timeZoneId)
+                .add({ [unit]: 1 });
+        } else if (TimeParser.BEFORE_REGEX.test(beforeOrAfter)) {
+            reference = Temporal.Now.zonedDateTimeISO(timeZoneId)
+                .subtract({ [unit]: 1 });
+        }
+
+        const relText = this.consumeWord();
+        if (!relText) {
+            return null;
+        }
+        if (TimeParser.NEXT_REGEX.test(relText)) {
+            return reference.add({ [unit]: 1 });
+        } else if (TimeParser.PREVIOUS_REGEX.test(relText)) {
+            return reference.subtract({ [unit]: 1 });
+        } else if (TimeParser.THIS_REGEX.test(relText)) {
+            // Just return as-is.
+            return reference;
+        }
+        return null;
     }
 
     /**
@@ -334,22 +483,16 @@ export default class TimeParser extends Parser {
             return null;
         }
 
-        if (/^su?n?d?a?y?$/.test(word)) {
-            return 0;
-        } else if (/^mo?n?d?a?y?$/.test(word)) {
-            return 1;
-        } else if (/^tu?e?s?d?a?y?$/.test(word)) {
-            return 2;
-        } else if (/^we?d?n?e?s?d?a?y?$/.test(word)) {
-            return 3;
-        } else if (/^thu?r?s?d?a?y?$/.test(word)) {
-            return 4;
-        } else if (/^fr?i?d?a?y?$/.test(word)) {
-            return 5;
-        } else if (/^sat?u?r?d?a?y?$/.test(word)) {
-            return 6;
+        // Check if this is a weekday.
+        if (!TimeParser.WEEKDAY_REGEX.test(word)) {
+            return null;
         }
-
+        // Determine which weekday it is.
+        for (const dayNum in TimeParser.WEEKDAY_REGEXES) {
+            if (TimeParser.WEEKDAY_REGEXES[dayNum].test(word)) {
+                return +dayNum;
+            }
+        }
         return null;
     }
 

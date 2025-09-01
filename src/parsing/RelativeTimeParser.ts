@@ -32,9 +32,6 @@ export class RelativeTimeParser extends TimeParser {
     public parse(): RelativeTimeMatch[] {
         const matches: (RelativeTimeMatch | null)[] = [];
 
-        // Remove all trailing whitespace
-        this.consumeWhitespace();
-
         // Go through each word and see if it matches an expression we need.
         const lastIndex = this.index;
         do {

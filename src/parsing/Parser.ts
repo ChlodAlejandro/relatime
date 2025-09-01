@@ -166,10 +166,22 @@ export default class Parser {
     }
 
     /**
+     * Pre-consumption processing, like consuming whitespace.
+     *
+     * @protected
+     */
+    protected preConsume() {
+        if (Parser.WHITESPACE_REGEX.test(this.working)) {
+            this.consumeWhitespace(true);
+        }
+    }
+
+    /**
      * Consume and return the next word.
      * @param excludeWhitespace Whether to discard whitespace succeeding the word or not.
      */
     public consumeWord(excludeWhitespace = false) {
+        this.preConsume();
         const match = this.working.match(Parser.WORD_REGEX);
         if (match) {
             this.index += match[0].length;
@@ -187,6 +199,7 @@ export default class Parser {
      * @param excludeWhitespace Whether to discard whitespace succeeding the word or not.
      */
     public consumeNumbers(excludeWhitespace = false) {
+        this.preConsume();
         const match = this.working.match(Parser.NUMBER_REGEX);
         if (match) {
             this.index += match[0].length;
@@ -203,6 +216,7 @@ export default class Parser {
      * Consume and return the next ordinal number (e.g. "first", "second", "third").
      */
     public consumeOrdinal(excludeWhitespace = false): number {
+        this.preConsume();
         if (this.peekRegex(/\d+(th|st|nd|rd)\b/i)) {
             // This is just a number and a suffix. Consume all.
             const number = this.consumeNumbers();
@@ -245,6 +259,9 @@ export default class Parser {
 
     /**
      * Consume and return whitespace.
+     *
+     * This function does not run any pre-consumption processing.
+     *
      * @param withNewlines Whether to include newlines as whitespace.
      */
     public consumeWhitespace(withNewlines = false) {
@@ -263,6 +280,7 @@ export default class Parser {
      * Consume and return symbols (non-word, non-whitespace characters).
      */
     public consumePunctuation() {
+        this.preConsume();
         const match = this.working.match(Parser.PUNCTUATION_REGEX);
         if (match) {
             this.index += match[0].length;
@@ -276,6 +294,7 @@ export default class Parser {
      * Consume and return non-word characters (punctuation and whitespace).
      */
     public consumeNonWord() {
+        this.preConsume();
         const regex = combineRegex([Parser.PUNCTUATION_REGEX, Parser.WHITESPACE_SIMPLE_REGEX], {
             trimStart: /\^/,
             trimEnd: /\+/,
@@ -296,6 +315,7 @@ export default class Parser {
      * Consume and return text matching a given regex.
      */
     public consumeRegex(regex: RegExp) {
+        this.preConsume();
         const match = this.working.match(regex);
         if (match) {
             this.index += match[0].length;

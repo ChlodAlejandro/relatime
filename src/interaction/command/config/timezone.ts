@@ -58,13 +58,24 @@ export const timezone = <ISlashSubcommand>{
             const timezone = Array.isArray(parsed) ? parsed[0] : parsed;
 
             const timeString = timezoneToString(timezone);
-            const offset = isCustomTimezone(timezone) ? timezone.standard.offset : timezone.iana;
+            const isCustom = isCustomTimezone(timezone);
+            const offset = isCustom ? timezone.standard.offset : timezone.iana;
+
+            let description = `Your timezone has been set to ${
+                timeString
+            }. The current time there is ${
+                dateToString(new Date(), offset, interaction.locale, { dateStyle: "long", timeStyle: "medium" })
+            }`;
+
+            if (isCustom) {
+                description += "\n\n**NOTE:** UTC offsets do not account for daylight savings time. If your location uses daylight savings, consider using a TZ identifier instead (e.g., \"America/New_York\" instead of \"-05:00\").";
+            }
 
             await getDb()("config")
                 .insert({
                     cfg_user: interaction.user.id,
                     cfg_key: "timezone",
-                    cfg_value: isCustomTimezone(timezone) ?
+                    cfg_value: isCustom ?
                         (`custom:${timezone.standard.offset}`) :
                         (`iana:${timezone.iana}`),
                 })
@@ -78,11 +89,7 @@ export const timezone = <ISlashSubcommand>{
                 embeds: [
                     successEmbed(
                         "Timezone set",
-                        `Your timezone has been set to ${
-                            timeString
-                        }. The current time there is ${
-                            dateToString(new Date(), offset, interaction.locale, { dateStyle: "long", timeStyle: "medium" })
-                        }`,
+                        description,
                     ),
                 ],
             });

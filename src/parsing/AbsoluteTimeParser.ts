@@ -22,15 +22,12 @@ export default class AbsoluteTimeParser extends TimeParser {
             (timezone < 0 ? "-" : "+") +
             Math.floor(Math.abs(timezone)).toString().padStart(2, "0") +
             ":" +
-            (Math.floor(Math.abs(timezone % 1) * 60)).toString().padStart(2, "0")
+            (Math.round(Math.abs(timezone % 1) * 60)).toString().padStart(2, "0")
         );
     }
 
     public parse(): AbsoluteTimeMatch[] {
         const matches: (AbsoluteTimeMatch | null)[] = [];
-
-        // Remove all trailing whitespace
-        this.consumeWhitespace();
 
         // Go through each word and see if it matches an expression we need.
         const lastIndex = this.index;
@@ -44,25 +41,33 @@ export default class AbsoluteTimeParser extends TimeParser {
                 continue;
             }
 
-            if (this.detectYesterday(matches, word, startIndex))
-                continue;
-            if (this.detectToday(matches, word, startIndex))
-                continue;
-            if (this.detectTomorrow(matches, word, startIndex))
-                continue;
-            if (this.detectBackAndFrontOfHour(matches, word, startIndex))
-                continue;
+            // This must be ordered from most-specific to least-specific, or else we'll match
+            // too small that the patterns we want.
             if (this.detectFirstAndLastDays(matches, word, startIndex))
                 continue;
             if (this.detectNthWeekdayOfMonth(matches, word, startIndex))
                 continue;
             if (this.detectLastWeekdayOfMonth(matches, word, startIndex))
                 continue;
+            if (this.detectWeekdayAndRelativeTime(matches, word, startIndex))
+                continue;
+            if (this.detectRelativeWeekday(matches, word, startIndex))
+                continue;
             if (this.detectOrdinalUnit(matches, word, startIndex))
                 continue;
-            if (this.detectWeekday(matches, word, startIndex))
+            if (this.detectBackAndFrontOfHour(matches, word, startIndex))
                 continue;
-            if (this.detectWeekdayAndRelativeTime(matches, word, startIndex))
+            if (this.detectYesterday(matches, word, startIndex))
+                continue;
+            if (this.detectToday(matches, word, startIndex))
+                continue;
+            if (this.detectTomorrow(matches, word, startIndex))
+                continue;
+            if (this.detectMidnight(matches, word, startIndex))
+                continue;
+            if (this.detectPrepositionTimeOfDay(matches, word, startIndex))
+                continue;
+            if (this.detectTimeOfDay(matches, word, startIndex))
                 continue;
 
             if (lastIndex === this.index) {
@@ -85,15 +90,17 @@ export default class AbsoluteTimeParser extends TimeParser {
                 return false;
             }
 
-            if (["at", "on", "in"].includes(this.peekWord())) {
+            if (/^(on|at|in)$/i.test(this.peekWord())) {
                 // Cut out the preposition.
                 this.consumeWord();
             }
 
             // Check to see if this precedes a time of day.
             const timeOfDay = this.consumeTimeOfDay();
-            const precision = timeOfDay.seconds != null ? "second" :
-                (timeOfDay.minutes != null ? "minute" : "hour");
+            const precision = timeOfDay ?
+                (timeOfDay?.seconds != null ? "second" :
+                    (timeOfDay?.minutes != null ? "minute" : "hour")) :
+                "day";
             if (timeOfDay) {
                 // Set to a specific time of day.
                 matches.push({
@@ -131,8 +138,7 @@ export default class AbsoluteTimeParser extends TimeParser {
         word: string,
         startIndex: number,
     ): boolean {
-        const today = Temporal.Now.zonedDateTimeISO(this.timeZoneId)
-            .add({ days: 1 });
+        const today = Temporal.Now.zonedDateTimeISO(this.timeZoneId);
         return this.getKeywordAndTimeDetector("today", today)(matches, word, startIndex);
     }
 
@@ -144,6 +150,73 @@ export default class AbsoluteTimeParser extends TimeParser {
         const tomorrow = Temporal.Now.zonedDateTimeISO(this.timeZoneId)
             .add({ days: 1 });
         return this.getKeywordAndTimeDetector("tomorrow", tomorrow)(matches, word, startIndex);
+    }
+
+    protected detectMidnight(
+        matches: AbsoluteTimeMatch[],
+        word: string,
+        startIndex: number,
+    ): boolean {
+        if (word.toLowerCase() !== "midnight") {
+            return false;
+        }
+
+        const today = Temporal.Now.zonedDateTimeISO(this.timeZoneId)
+            .startOfDay();
+        matches.push({
+            match: this.source.substring(startIndex, this.index).trim(),
+            date: today,
+            precision: "minute",
+        });
+        return true;
+    }
+
+    protected detectPrepositionTimeOfDay(
+        matches: AbsoluteTimeMatch[],
+        word: string,
+        startIndex: number,
+    ): boolean {
+        if (!/^(at|around|by|about)$/i.test(word)) {
+            return false;
+        }
+
+        const timeOfDay = this.consumeTimeOfDay();
+        if (!timeOfDay) {
+            return false;
+        }
+
+        const today = Temporal.Now.zonedDateTimeISO(this.timeZoneId)
+            .startOfDay();
+        matches.push({
+            match: this.source.substring(startIndex, this.index).trim(),
+            date: today.add(timeOfDay),
+            precision: timeOfDay?.seconds != null ? "second" : "minute",
+        });
+        return true;
+    }
+
+    protected detectTimeOfDay(
+        matches: AbsoluteTimeMatch[],
+        _word: string,
+        startIndex: number,
+    ): boolean {
+        const currentIndex = this.index;
+        // Move us back so we can consume this time of day.
+        this.seek(startIndex);
+        const timeOfDay = this.consumeTimeOfDay();
+        if (!timeOfDay) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        const today = Temporal.Now.zonedDateTimeISO(this.timeZoneId)
+            .startOfDay();
+        matches.push({
+            match: this.source.substring(startIndex, this.index).trim(),
+            date: today.add(timeOfDay),
+            precision: timeOfDay?.seconds != null ? "second" : "minute",
+        });
+        return true;
     }
 
     /**
@@ -222,16 +295,30 @@ export default class AbsoluteTimeParser extends TimeParser {
             this.seek(currentIndex);
             return false;
         } else {
-            matches.push({
-                match: this.source.substring(startIndex, this.index).trim(),
-                date: monthYear.time
-                    .with({ day: word === "first" ? 1 : monthYear.time.daysInMonth })
-                    .startOfDay(),
-                precision: "day",
-            });
+            if (monthYear.precision === "month") {
+                matches.push({
+                    match: this.source.substring(startIndex, this.index).trim(),
+                    date: monthYear.time
+                        .with({ day: word === "first" ? 1 : monthYear.time.daysInMonth })
+                        .startOfDay(),
+                    precision: "day",
+                });
+            } else {
+                matches.push({
+                    match: this.source.substring(startIndex, this.index).trim(),
+                    date: monthYear.time
+                        .with({
+                            month: word === "first" ? 1 : monthYear.time.monthsInYear,
+                        })
+                        .with({
+                            day: word === "first" ? 1 : monthYear.time.daysInMonth,
+                        })
+                        .startOfDay(),
+                    precision: "day",
+                });
+            }
+            return true;
         }
-
-        this.seek(currentIndex);
     }
 
     protected detectNthWeekdayOfMonth(
@@ -249,6 +336,7 @@ export default class AbsoluteTimeParser extends TimeParser {
         this.seek(startIndex);
         const ordinal = this.consumeOrdinal(true);
         if (ordinal == null) {
+            this.seek(currentIndex);
             return false;
         }
 
@@ -361,6 +449,7 @@ export default class AbsoluteTimeParser extends TimeParser {
         this.seek(startIndex);
         const ordinal = this.consumeOrdinal(true);
         if (!ordinal) {
+            this.seek(currentIndex);
             return false;
         }
 
@@ -446,7 +535,7 @@ export default class AbsoluteTimeParser extends TimeParser {
         }
     }
 
-    protected detectWeekday(
+    protected detectRelativeWeekday(
         matches: AbsoluteTimeMatch[],
         word: string,
         startIndex: number,
@@ -493,16 +582,19 @@ export default class AbsoluteTimeParser extends TimeParser {
         const relativeWord = this.peekWord();
         const date = this.getDateFromRelativeWeekday(weekday, relativeWord);
         if (!date) {
-            this.seek(currentIndex);
-            return false;
+            matches.push({
+                match: this.source.substring(startIndex, this.index).trim(),
+                date: this.getDateFromRelativeWeekday(weekday, "next"),
+                precision: "day",
+            });
         } else {
             matches.push({
                 match: this.source.substring(startIndex, this.index).trim(),
                 date,
                 precision: "day",
             });
-            return true;
         }
+        return true;
     }
 
 }

@@ -37,9 +37,12 @@ export const durationUnitFullRegexes: Record<keyof typeof durationUnits, RegExp>
 };
 export const durationUnitRegexes = Object.fromEntries(
     Object.entries(durationUnits)
-        .map(([k, v]) => [
+        .map(([k]) => [
             k,
-            combineRegex([durationUnitShorthandRegexes[v], durationUnitFullRegexes[v]]),
+            combineRegex([durationUnitShorthandRegexes[k], durationUnitFullRegexes[k]], {
+                prepend: "^",
+                append: "$",
+            }),
         ]),
 ) as Record<keyof typeof durationUnits, RegExp>;
 export const durationUnitRegexCaseInsensitive = new RegExp(
