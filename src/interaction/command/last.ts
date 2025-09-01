@@ -1,9 +1,8 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import { getDb } from "../../database/Database.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
-import AbsoluteTimeParser from "../../parsing/AbsoluteTimeParser.ts";
 import { DurationUnit } from "../../parsing/Duration.ts";
-import { RelativeTimeParser } from "../../parsing/RelativeTimeParser.ts";
+import TimeParser from "../../parsing/TimeParser.ts";
 import timezoneToString from "../../util/timezoneToString.ts";
 import { ISlashCommand } from "../types.ts";
 
@@ -86,8 +85,7 @@ export const last = <ISlashCommand>{
                 }
             });
 
-        const relativeTimeMatches = new RelativeTimeParser(lastMessage.content).parse();
-        const absoluteTimeMatches = new AbsoluteTimeParser(lastMessage.content, timezone).parse();
+        const timeMatches = new TimeParser(lastMessage.content, timezone).parse();
 
         let content = "";
 
@@ -100,18 +98,20 @@ export const last = <ISlashCommand>{
 
         const matchStrings = [];
         const arrowRight = "\u2192";
-        for (const match of relativeTimeMatches) {
-            matchStrings.push(`${match.match} ${arrowRight} <t:${Math.floor((Date.now() / 1e3) + match.duration)}:F>`);
-        }
-        for (const match of absoluteTimeMatches) {
+        for (const match of timeMatches) {
             const timestamps = [];
             const timeFormats = precisionSyntaxFlags[match.precision];
+            const epoch = Math.floor(match.date.epochMilliseconds / 1e3);
             for (const flag of timeFormats) {
-                timestamps.push(`<t:${Math.floor(match.date.epochMilliseconds / 1e3)}:${flag}>`);
+                timestamps.push(`<t:${epoch}:${flag}>`);
             }
 
+            const notes = [];
+            if (match.approximated) notes.push("approximated");
+            if (match.relative) notes.push(`<t:${epoch}:R>`);
+
             matchStrings.push(`${match.match} ${arrowRight} ${timestamps.join(", ")}${
-                match.approximated ? " (approximate)" : ""
+                notes.length > 0 ? ` (${notes.join("; ")})` : ""
             }`);
         }
 

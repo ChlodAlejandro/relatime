@@ -5,6 +5,7 @@
 
 import combineRegex from "../util/combineRegex.ts";
 
+// These number values are only used for sorting.
 export const durationUnits = {
     second: 1,
     minute: 60,
@@ -17,7 +18,7 @@ export const durationUnits = {
     year: 60 * 60 * 24 * 365,
 };
 export type DurationUnit = keyof typeof durationUnits;
-export const durationUnitShorthandRegexes: Record<keyof typeof durationUnits, RegExp> = {
+export const durationUnitShorthandRegexes: Record<DurationUnit, RegExp> = {
     second: /s|secs?/,
     minute: /m(?!o)|min/,
     hour: /h|hr/,
@@ -26,7 +27,7 @@ export const durationUnitShorthandRegexes: Record<keyof typeof durationUnits, Re
     month: /mo|mon/,
     year: /y|yr/,
 };
-export const durationUnitFullRegexes: Record<keyof typeof durationUnits, RegExp> = {
+export const durationUnitFullRegexes: Record<DurationUnit, RegExp> = {
     second: /seconds?/i,
     minute: /minutes?/i,
     hour: /hours?/i,
@@ -36,15 +37,15 @@ export const durationUnitFullRegexes: Record<keyof typeof durationUnits, RegExp>
     year: /years?/i,
 };
 export const durationUnitRegexes = Object.fromEntries(
-    Object.entries(durationUnits)
-        .map(([k]) => [
+    Object.keys(durationUnits)
+        .map((k) => [
             k,
             combineRegex([durationUnitShorthandRegexes[k], durationUnitFullRegexes[k]], {
                 prepend: "^",
                 append: "$",
             }),
         ]),
-) as Record<keyof typeof durationUnits, RegExp>;
+) as Record<DurationUnit, RegExp>;
 export const durationUnitRegexCaseInsensitive = new RegExp(
     Object.values(durationUnitShorthandRegexes)
         .concat(Object.values(durationUnitFullRegexes))
@@ -70,4 +71,17 @@ export const durationUnitRegexCaseSensitive = new RegExp(
  */
 export function unitCompare(a: DurationUnit, b: DurationUnit): number {
     return durationUnits[a] - durationUnits[b];
+}
+
+/**
+ * Get the smallest duration unit in a duration object.
+ * @param durationObject
+ */
+export function getSmallestDurationUnit(durationObject: Partial<Record<DurationUnit, number>>) {
+    const units = Object.keys(durationObject) as DurationUnit[];
+    if (units.length === 0) return null;
+    return units.reduce((smallest, current) => {
+        if (unitCompare(current, smallest) < 0) return current;
+        return smallest;
+    }, units[0]);
 }
