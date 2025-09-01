@@ -1,11 +1,12 @@
 import { log } from "../util/log.ts";
-import { durationUnits } from "./Duration.ts";
+import { DurationUnit, durationUnits, unitCompare } from "./Duration.ts";
 import TimeParser from "./TimeParser.ts";
 
 export interface RelativeTimeMatch {
     match: string;
     /** The number of seconds that represent the match. */
     duration: number;
+    precision: "second" | "minute" | "hour" | "day" | "week" | "month" | "year";
 }
 
 /**
@@ -63,6 +64,29 @@ export class RelativeTimeParser extends TimeParser {
             .filter(v => !!v);
     }
 
+    protected consumeDurationChain(): { durationInSeconds: number, precision: keyof typeof durationUnits } | null {
+        let durationInSeconds: number = null;
+        // Using a loop here allows us to detect "1h30m".
+        let detectedDuration: { durationInSeconds: number, unit: keyof typeof durationUnits } | null;
+        let precision: DurationUnit;
+        do {
+            detectedDuration = this.consumeDuration(true);
+            if (detectedDuration !== null) {
+                durationInSeconds = (durationInSeconds ?? 0) + detectedDuration.durationInSeconds;
+                if (precision && unitCompare(detectedDuration.unit, precision) > 0) {
+                    precision = detectedDuration.unit;
+                } else {
+                    precision = detectedDuration.unit;
+                }
+            }
+        } while (detectedDuration !== null);
+        if (durationInSeconds == null) {
+            // No duration found, discard.
+            return null;
+        }
+        return { durationInSeconds, precision };
+    }
+
     /**
      * Match prefix durations like "in 5 minutes" or "after 2 hours"
      *
@@ -76,40 +100,34 @@ export class RelativeTimeParser extends TimeParser {
         word: string,
         startIndex: number,
     ): boolean {
-        let durationInSeconds: number | null = null;
-        if (this.prefixDurationRegex.test(word)) {
-            if (this.prefixSkipWords[word]) {
-                if (this.prefixSkipWords[word].includes(this.peekWord())) {
-                    // Check for skippable words for specific prefix words.
-                    this.consumeWord();
-                } else {
-                    // No skip word found, discard.
-                    return false;
-                }
-            }
-            // Using a loop here allows us to detect "1h30m".
-            let detectedDuration: number | null;
-            do {
-                detectedDuration = this.consumeDuration();
-                if (detectedDuration !== null) {
-                    durationInSeconds = (durationInSeconds ?? 0) + detectedDuration;
-                }
-            } while (detectedDuration !== null);
-            if (durationInSeconds == null) {
-                // No duration found, discard.
+        if (!this.prefixDurationRegex.test(word)) {
+            return false;
+        }
+
+        if (this.prefixSkipWords[word]) {
+            if (this.prefixSkipWords[word].includes(this.peekWord())) {
+                // Check for skippable words for specific prefix words.
+                this.consumeWord();
+            } else {
+                // No skip word found, discard.
                 return false;
             }
-
-            if (this.negateDurationRegex.test(word)) {
-                // Negate the duration.
-                durationInSeconds *= -1;
-            }
-            matches.push({
-                match: this.source.substring(startIndex, this.index).trim(),
-                duration: durationInSeconds,
-            });
-            return true;
         }
+
+        const duration = this.consumeDurationChain();
+        if (duration == null) {
+            // No duration found, discard.
+            return false;
+        }
+
+        matches.push({
+            match: this.source.substring(startIndex, this.index).trim(),
+            duration: duration.durationInSeconds *
+                (this.negateDurationRegex.test(word) ? -1 : 1),
+            precision: duration.precision,
+        });
+
+        return true;
     }
 
     /**
@@ -125,7 +143,6 @@ export class RelativeTimeParser extends TimeParser {
         word: string,
         startIndex: number,
     ): boolean {
-        let durationInSeconds: number | null = null;
         // Detect numbers for a duration. This does postfix matching.
         if (this.spelledDurationRegex.test(word) || /^\d+$/.test(word)) {
             // Reset the index so we can consume the whole thing as a duration.
@@ -135,15 +152,8 @@ export class RelativeTimeParser extends TimeParser {
             return false;
         }
 
-        // Using a loop here allows us to detect "1h30m".
-        let detectedDuration: number | null;
-        do {
-            detectedDuration = this.consumeDuration();
-            if (detectedDuration !== null) {
-                durationInSeconds = (durationInSeconds ?? 0) + detectedDuration;
-            }
-        } while (detectedDuration !== null);
-        if (durationInSeconds == null) {
+        const duration = this.consumeDurationChain();
+        if (duration == null) {
             // No duration found, discard.
             return false;
         }
@@ -164,13 +174,11 @@ export class RelativeTimeParser extends TimeParser {
                 return false;
             }
         }
-        if (this.negateDurationRegex.test(postfix)) {
-            // Negate the duration.
-            durationInSeconds *= -1;
-        }
         matches.push({
             match: this.source.substring(startIndex, this.index).trim(),
-            duration: durationInSeconds,
+            duration: duration.durationInSeconds *
+                (this.negateDurationRegex.test(postfix) ? -1 : 1),
+            precision: duration.precision,
         });
     }
 
@@ -213,10 +221,12 @@ export class RelativeTimeParser extends TimeParser {
                 matches.push({
                     match: this.source.substring(startIndex, numbers1EndIndex).trim(),
                     duration: numbers1 * durationUnits.minute,
+                    precision: "minute",
                 });
                 matches.push({
                     match: this.source.substring(numbers2StartIndex, this.index).trim(),
                     duration: numbers2 * durationUnits.minute,
+                    precision: "minute",
                 });
             } else {
                 // Second part not matched

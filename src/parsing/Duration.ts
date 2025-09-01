@@ -60,3 +60,14 @@ export const durationUnitRegexCaseSensitive = new RegExp(
         .map(r => r.source)
         .join("|"),
 );
+
+/**
+ * Compares two duration units. Returns a negative number if `a` is smaller than `b`,
+ * a positive number if `a` is larger than `b`, and zero if they are equal.
+ *
+ * @param a
+ * @param b
+ */
+export function unitCompare(a: DurationUnit, b: DurationUnit): number {
+    return durationUnits[a] - durationUnits[b];
+}

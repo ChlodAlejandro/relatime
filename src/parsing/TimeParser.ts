@@ -63,7 +63,9 @@ export default class TimeParser extends Parser {
      *
      * @protected
      */
-    public consumeDuration(): number | null {
+    public consumeDuration(): number | null;
+    public consumeDuration(withUnit: true): { durationInSeconds: number, unit: DurationUnit } | null;
+    public consumeDuration(withUnit?: true): number | { durationInSeconds: number, unit: DurationUnit } | null {
         let durationNumber: number | null;
         if (this.peekWord() === "a" || this.peekWord() === "an" || this.peekWord() === "one") {
             this.consumeWord();
@@ -115,12 +117,14 @@ export default class TimeParser extends Parser {
         // Unit found. Consume it.
         const unitWord = this.consumeRegex(/^[a-z_]+/i);
         let durationInSeconds: number;
-        for (const unit in durationUnits) {
+        let unit;
+        for (const possibleUnit in durationUnits) {
             const matching =
-                cloneRegex(durationUnitShorthandRegexes[unit as DurationUnit], { prefix: "^" }).test(unitWord) ||
-                cloneRegex(durationUnitFullRegexes[unit as DurationUnit], { prefix: "^" }).test(unitWord);
+                cloneRegex(durationUnitShorthandRegexes[possibleUnit as DurationUnit], { prefix: "^" }).test(unitWord) ||
+                cloneRegex(durationUnitFullRegexes[possibleUnit as DurationUnit], { prefix: "^" }).test(unitWord);
             if (matching) {
-                durationInSeconds = durationNumber * durationUnits[unit as DurationUnit];
+                durationInSeconds = durationNumber * durationUnits[possibleUnit as DurationUnit];
+                unit = possibleUnit;
                 break;
             }
         }
@@ -133,7 +137,11 @@ export default class TimeParser extends Parser {
         // Remove that whitespace on our own.
         this.consumeWhitespace();
 
-        return durationInSeconds;
+        if (withUnit != null) {
+            return { durationInSeconds, unit };
+        } else {
+            return durationInSeconds;
+        }
     }
 
     /**
