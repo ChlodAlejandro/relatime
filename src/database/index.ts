@@ -1,9 +1,10 @@
 import * as fs from "fs/promises";
 import knex, { Knex } from "knex";
+import "./types";
 
 const DB_PATH = process.env.RT_DB_PATH || "./data/relatime.db";
 
-const tables = {
+export const DB_TABLES = {
     config: {
         builder: (table: Knex.CreateTableBuilder) => {
             table.string("cfg_user", 22)
@@ -20,12 +21,14 @@ const tables = {
             table.string("tm_id", 22)
                 .primary()
                 .notNullable();
+            table.string("tm_reply_id", 22)
+                .notNullable();
         },
     },
 };
 
 export async function setupDb(db: Knex) {
-    for (const [tableName, tableDef] of Object.entries(tables)) {
+    for (const [tableName, tableDef] of Object.entries(DB_TABLES)) {
         const exists = await db.schema.hasTable(tableName);
         if (!exists) {
             await db.schema.createTable(tableName, tableDef.builder);
@@ -44,7 +47,7 @@ export async function dbExists(db: Knex) {
             throw e;
         }
     }
-    for (const tableName of Object.keys(tables)) {
+    for (const tableName of Object.keys(DB_TABLES)) {
         const exists = await db.schema.hasTable(tableName);
         if (!exists) return false;
     }

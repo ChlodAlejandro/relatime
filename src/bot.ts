@@ -5,6 +5,7 @@ import { dbExists, getDb, setupDb } from "./database";
 import onInteractionCreate from "./handlers/onInteractionCreate.ts";
 import onMessageCreate from "./handlers/onMessageCreate.ts";
 import { loadSlashCommands } from "./interaction/loader";
+import { getOperatorGuilds } from "./util/isOperatorGuild.ts";
 import { log } from "./util/log.ts";
 
 const cwd = process.cwd();
@@ -43,15 +44,29 @@ process.env.TZ = "Etc/UTC";
 
     log.info("Registering interactions...");
 
-    const globalCommands = await loadSlashCommands();
-    log.info("Found " + globalCommands.size + " slash commands.");
+    const commands = await loadSlashCommands();
+    const globalCommands =
+        new Map(commands.entries().filter(([,command]) => command.type === "global"));
+    const debugCommands =
+        new Map(commands.entries().filter(([,command]) => command.type === "debug"));
 
+    log.info("Found " + globalCommands.size + " global slash commands.");
     await rest.put(
         Routes.applicationCommands(process.env.RT_DISCORD_CLIENT_ID!),
         { body: [...globalCommands.values().map(command => command.builder.toJSON())] },
     ).then((result) => {
         log.info("Registered global commands.", result);
     });
+
+    log.info("Found " + debugCommands.size + " debug slash commands.");
+    for (const guildId of getOperatorGuilds()) {
+        await rest.put(
+            Routes.applicationGuildCommands(process.env.RT_DISCORD_CLIENT_ID!, guildId),
+            { body: [...globalCommands.values().map(command => command.builder.toJSON())] },
+        ).then((result) => {
+            log.info(`Registered debug commands for ${guildId}.`, result);
+        });
+    }
 
     const client = new Client({
         intents: [

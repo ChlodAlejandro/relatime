@@ -1,5 +1,6 @@
 import { ClientEvents } from "discord.js";
 import { getUserConfig } from "../database/config.ts";
+import { trackMessage } from "../database/trackedMessages.ts";
 import { TimeParserMode } from "../parsing/TimeParser.ts";
 import getTimeMatches from "../util/getTimeMatches.ts";
 import { log } from "../util/log.ts";
@@ -33,12 +34,14 @@ export default async function onMessageCreate(...args: ClientEvents["messageCrea
             reply += "\n-# You've requested relatime to respond to your messages with relative/absolute times, but you have no timezone set. UTC will be used instead. Configure this with `/config timezone`.";
         }
 
-        await message.reply({
+        const botReply = await message.reply({
             content: reply,
             allowedMentions: {
                 repliedUser: false,
                 parse: [],
             },
         });
+
+        await trackMessage(reply, botReply.id);
     }
 }

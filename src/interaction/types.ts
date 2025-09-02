@@ -2,6 +2,7 @@ import { Interaction, SlashCommandBuilder, SlashCommandSubcommandBuilder } from 
 
 export interface ISlashCommand {
     builder: SlashCommandBuilder;
+    type?: "global" | "debug";
     execute(interaction: Interaction): Promise<void>;
 }
 
@@ -10,9 +11,9 @@ export interface ISlashSubcommand {
     execute(interaction: Interaction): Promise<void>;
 }
 
-function isSlashCommand(obj: any, willThrow?: false): obj is ISlashCommand;
-function isSlashCommand(obj: any, willThrow?: true): void;
-function isSlashCommand(obj: any, willThrow = false): boolean | void {
+function isSlashCommand(obj: unknown, willThrow?: false): obj is ISlashCommand;
+function isSlashCommand(obj: unknown, willThrow?: true): void;
+function isSlashCommand(obj: unknown, willThrow = false): boolean | void {
     const isValid = obj
         && typeof obj === "object"
         && "builder" in obj
