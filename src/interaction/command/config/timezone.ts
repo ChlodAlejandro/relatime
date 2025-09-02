@@ -130,7 +130,7 @@ export const timezone = <ISlashSubcommand>{
                 dateToString(new Date(), offset, interaction.locale, { dateStyle: "long", timeStyle: "medium" })
             }${privacyWarning}`;
 
-            await setUserConfig(interaction.user.id, "timezone", "iana:" + timezone.iana);
+            await setUserConfig(interaction.user.id, "timezone", timezone.iana);
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [
