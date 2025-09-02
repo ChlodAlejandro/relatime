@@ -217,7 +217,7 @@ export default class Parser {
      */
     public consumeOrdinal(excludeWhitespace = false): number {
         this.preConsume();
-        if (this.peekRegex(/\d+(th|st|nd|rd)\b/i)) {
+        if (this.peekRegex(/^\d+(th|st|nd|rd)\b/i)) {
             // This is just a number and a suffix. Consume all.
             const number = this.consumeNumbers();
             this.consumeRegex(/(th|st|nd|rd)\b/i);
