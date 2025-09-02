@@ -5,5 +5,8 @@ declare module "knex/types/tables" {
             cfg_key: string;  // Configuration key
             cfg_value: string; // Configuration value
         }
+        tracked_messages: {
+            tm_id: string; // Message ID
+        }
     }
 }
