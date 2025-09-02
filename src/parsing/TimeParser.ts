@@ -907,18 +907,19 @@ export default class TimeParser extends Parser {
             this.seek(currentIndex);
             return false;
         }
+        let monthYear: ReturnType<TimeParser["consumeMonthYear"]>;
         if (this.peekWord() !== "of") {
-            // Not "of" after the weekday, clean up and give up.
-            this.seek(currentIndex);
-            return false;
-        }
-        this.consumeWord(); // of
+            // Not "of" after the weekday, assume current month.
+            monthYear = { time: this.now().with({ day: 1 }).startOfDay(), precision: "month" };
+        } else {
+            this.consumeWord(); // of
 
-        const monthYear = this.consumeMonthYear();
-        if (!monthYear) {
-            // Oops, this is not a valid month/year. Clean up and give up.
-            this.seek(currentIndex);
-            return false;
+            const monthYear = this.consumeMonthYear();
+            if (!monthYear) {
+                // Oops, this is not a valid month/year. Clean up and give up.
+                this.seek(currentIndex);
+                return false;
+            }
         }
 
         // We have the month and year. Now to find the nth weekday of that month or year.

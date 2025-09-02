@@ -100,6 +100,13 @@ describe("TimeParser", () => {
             },
         "fifth day":
             (now) => now.with({ day: 5 }).startOfDay(),
+        "4th Monday":
+            // Fourth Monday of the month
+            (now) => {
+                const firstOfMonth = now.with({ day: 1 });
+                const daysToMonday = (1 + 7 - firstOfMonth.dayOfWeek) % 7;
+                return firstOfMonth.add({ days: daysToMonday + 21 }).startOfDay();
+            },
         "second month":
             (now) => now.with({ month: 2, day: 1 }).startOfDay(),
         "last day":
