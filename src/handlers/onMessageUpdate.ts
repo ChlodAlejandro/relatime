@@ -15,22 +15,26 @@ export default async function onMessageUpdate(...args: ClientEvents["messageUpda
 
     const userConfig = await getUserConfig(message.author.id, <const>["relative", "absolute", "timezone"]);
 
+    async function processIfRecent() {
+        if (!message.channel || !message.channel.isTextBased()) {
+            return;
+        }
+        const messages = await message.channel.messages.fetch({ limit: 10 });
+        const found = messages.find(m => m.id === message.id);
+        if (!found) {
+            // Not in the last 10 messages, we don't process it.
+            return;
+        }
+
+        await handleMessage(message, userConfig);
+    }
+
     // Check if the message is tracked
     const botReply = await getMessageBotReply(message.id);
     if (!botReply) {
         // Not tracked. Process it if the user has the config enabled and if it's in the last 10 messages.
         if (userConfig.relative || userConfig.absolute) {
-            if (!message.channel || !message.channel.isTextBased()) {
-                return;
-            }
-            const messages = await message.channel.messages.fetch({ limit: 10 });
-            const found = messages.find(m => m.id === message.id);
-            if (!found) {
-                // Not in the last 10 messages, we don't process it.
-                return;
-            }
-
-            await handleMessage(message, userConfig);
+            await processIfRecent();
         }
     } else {
         // Tracked. We process it nonetheless. If the user has already disabled the config, we do nothing.
@@ -42,7 +46,7 @@ export default async function onMessageUpdate(...args: ClientEvents["messageUpda
                 if (e.code == 10008) {
                     // Unknown Message, the bot's reply message is gone?
                     // Resend it.
-                    await handleMessage(message, userConfig);
+                    await processIfRecent();
                     return;
                 }
                 throw e;
