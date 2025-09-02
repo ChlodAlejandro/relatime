@@ -231,14 +231,21 @@ describe("TimeParser", () => {
     test("concatenated test (simples)", () => {
         const concatenated = Object.keys(simpleTests).join(", ");
         const matches = new TimeParser(concatenated, timezone).parse();
-        expect(matches).toHaveLength(Object.keys(simpleTests).length);
-        matches.forEach((match, i) => {
-            const input = Object.keys(simpleTests)[i];
-            const expectedDate = simpleTests[input](now);
 
-            expect(match.date.toInstant().toString(stringifyOptions))
-                .toBe(expectedDate.toInstant().toString(stringifyOptions));
-        });
+        Object.entries(simpleTests)
+            .forEach(([input, expected]) => {
+                const foundMatch = matches.find(m => m.match.toLowerCase() === input.toLowerCase());
+                try {
+                    expect(foundMatch).toBeDefined();
+                } catch {
+                    throw new Error(`Could not find match for input "${input}"`);
+                }
+                const expectedDate = expected(now);
+                expect(foundMatch.date.toInstant().toString(stringifyOptions))
+                    .toBe(expectedDate.toInstant().toString(stringifyOptions));
+            });
+
+        expect(matches).toHaveLength(Object.keys(simpleTests).length);
     });
 
     test("inside of misc. text (absolute)", () => {
