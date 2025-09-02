@@ -10,7 +10,8 @@ export default async function onMessageCreate(...args: ClientEvents["messageCrea
     // Ignore messages from bots
     if (message.author.bot) return;
 
-    log.debug(`Message from ${message.author.tag} (${message.author.id}): ${message.content}`);
+    if (process.env.NODE_ENV !== "production")
+        log.debug(`Message from ${message.author.tag} (${message.author.id}): ${message.content}`);
 
     const { relative, absolute, timezone } = await getUserConfig(message.author.id, <const>["relative", "absolute", "timezone"]);
 
