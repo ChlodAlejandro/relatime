@@ -5,6 +5,7 @@ import { relative } from "./config/relative";
 import { timezone } from "./config/timezone";
 
 export const config = <ISlashCommand>{
+    type: "global",
     builder: new SlashCommandBuilder()
         .setName("config")
         .setDescription("Set your configuration options")

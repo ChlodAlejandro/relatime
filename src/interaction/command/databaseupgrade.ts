@@ -6,7 +6,8 @@ import isOperator from "../../util/isOperator.ts";
 import { version } from "../../version.ts";
 import { ISlashCommand } from "../types.ts";
 
-export const parse = <ISlashCommand>{
+export const databaseupgrade = <ISlashCommand>{
+    type: "debug",
     builder: new SlashCommandBuilder()
         .setName("databaseupgrade")
         .setDescription("Upgrade the database.")
@@ -61,8 +62,9 @@ export const parse = <ISlashCommand>{
         const knex = getDb();
         switch (upgradeVersion) {
             case "0.1.3":
-                knex.schema.alterTable("tracked_messages", (table) => {
-                    return DB_TABLES.tracked_messages.builder(table);
+                await knex.schema.alterTable("tracked_messages", (table) => {
+                    table.string("tm_reply_id", 22)
+                        .notNullable();
                 });
                 appliedUpgrades.push("0.1.3");
                 break;

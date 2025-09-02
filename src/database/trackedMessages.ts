@@ -26,6 +26,18 @@ export async function getMessageBotReply(id: string): Promise<null | Snowflake> 
     return null;
 }
 
+export async function untrackMessage(id: Snowflake) {
+    const keyv = getKeyv();
+
+    const cacheKey = `tracked_message:${id}`;
+    await getDb()("tracked_messages")
+        .where({
+            tm_id: id,
+        })
+        .del();
+    await keyv.delete(cacheKey);
+}
+
 export async function trackMessage(id: Snowflake, replyId: Snowflake) {
     const keyv = getKeyv();
 

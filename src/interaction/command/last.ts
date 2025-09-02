@@ -6,6 +6,7 @@ import timezoneToString from "../../util/timezoneToString.ts";
 import { ISlashCommand } from "../types.ts";
 
 export const last = <ISlashCommand>{
+    type: "global",
     builder: new SlashCommandBuilder()
         .setName("last")
         .setDescription("Processes the last message and converts relative or absolute time to timestamps.")

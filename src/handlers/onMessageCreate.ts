@@ -1,9 +1,7 @@
 import { ClientEvents } from "discord.js";
 import { getUserConfig } from "../database/config.ts";
-import { trackMessage } from "../database/trackedMessages.ts";
-import { TimeParserMode } from "../parsing/TimeParser.ts";
-import getTimeMatches from "../util/getTimeMatches.ts";
 import { log } from "../util/log.ts";
+import handleMessage from "./util/handleMessage.ts";
 
 export default async function onMessageCreate(...args: ClientEvents["messageCreate"]) {
     const [message] = args;
@@ -14,34 +12,9 @@ export default async function onMessageCreate(...args: ClientEvents["messageCrea
     if (process.env.NODE_ENV !== "production")
         log.debug(`Message from ${message.author.tag} (${message.author.id}): ${message.content}`);
 
-    const { relative, absolute, timezone } = await getUserConfig(message.author.id, <const>["relative", "absolute", "timezone"]);
+    const userConfig = await getUserConfig(message.author.id, <const>["relative", "absolute", "timezone"]);
 
-    if (relative || absolute) {
-        const parserFlags = [];
-        if (relative) parserFlags.push(TimeParserMode.Relative);
-        if (absolute) parserFlags.push(TimeParserMode.Absolute);
-
-        let reply = "";
-        const matched = getTimeMatches(message.content, timezone ?? "UTC", {
-            modes: parserFlags,
-        });
-        if (!matched) {
-            return;
-        }
-        reply += matched;
-
-        if (!timezone) {
-            reply += "\n-# You've requested relatime to respond to your messages with relative/absolute times, but you have no timezone set. UTC will be used instead. Configure this with `/config timezone`.";
-        }
-
-        const botReply = await message.reply({
-            content: reply,
-            allowedMentions: {
-                repliedUser: false,
-                parse: [],
-            },
-        });
-
-        await trackMessage(reply, botReply.id);
+    if (userConfig.relative || userConfig.absolute) {
+        await handleMessage(message, userConfig);
     }
 }

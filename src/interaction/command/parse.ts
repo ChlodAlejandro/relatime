@@ -7,6 +7,7 @@ import { ISlashCommand } from "../types.ts";
 import getTimeMatches from "../../util/getTimeMatches.ts";
 
 export const parse = <ISlashCommand>{
+    type: "global",
     builder: new SlashCommandBuilder()
         .setName("parse")
         .setDescription("Parse out times from text.")

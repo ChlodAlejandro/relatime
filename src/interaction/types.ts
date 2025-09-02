@@ -2,7 +2,7 @@ import { Interaction, SlashCommandBuilder, SlashCommandSubcommandBuilder } from 
 
 export interface ISlashCommand {
     builder: SlashCommandBuilder;
-    type?: "global" | "debug";
+    type: "global" | "debug";
     execute(interaction: Interaction): Promise<void>;
 }
 
