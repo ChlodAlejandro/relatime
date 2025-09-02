@@ -11,6 +11,18 @@ Converts relative time in chat to Discord timestamps based on the user's timezon
 - [ ] Support for more specific dates (e.g., "August 12 at 3 a.m.") 
 
 ## Usage
+
+### Commands
+* `/config` - Changes configuration options
+  * `/config timezone` - Sets your timezone
+  * `/config relative` - Enables replying with timestamps when a relative time (e.g. "in 2 hours") is mentioned.
+  * `/config absolute` - Enables replying with timestamps when an absolute time (e.g. "9pm", "Monday at 5pm") is mentioned.
+* `/last` - Parses relative and absolute times in the last message sent to the channel
+* `/parse` - Parses a given text for relative and absolute times
+  * option: `print` - If enabled, the bot will output the parsed message instead of replying only to the user who ran the command.
+
+### Running the bot
+
 You can run the bot as a Docker container. Data is stored in the `/app/data` directory.
 ```bash
 docker pull ghcr.io/ChlodAlejandro/relatime:latest
