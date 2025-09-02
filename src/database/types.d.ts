@@ -7,6 +7,7 @@ declare module "knex/types/tables" {
         }
         tracked_messages: {
             tm_id: string; // Message ID
+            tm_reply_id: string; // Reply message ID
         }
     }
 }
