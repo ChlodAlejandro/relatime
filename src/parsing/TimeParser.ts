@@ -914,7 +914,7 @@ export default class TimeParser extends Parser {
         } else {
             this.consumeWord(); // of
 
-            const monthYear = this.consumeMonthYear();
+            monthYear = this.consumeMonthYear();
             if (!monthYear) {
                 // Oops, this is not a valid month/year. Clean up and give up.
                 this.seek(currentIndex);
