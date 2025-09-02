@@ -1094,12 +1094,7 @@ export default class TimeParser extends Parser {
 
     private getDateFromRelativeWeekday(weekday: number, relation: string): null | Temporal.ZonedDateTime {
         const now = this.now();
-        if (combineRegex([TimeParser.NEXT_REGEX, TimeParser.THIS_REGEX], {
-            trimStart: /\^/,
-            trimEnd: /\$/,
-            prepend: "^",
-            append: "$",
-        }).test(relation)) {
+        if (TimeParser.NEXT_REGEX.test(relation)) {
             const daysUntilWeekday = (weekday + 7 - now.dayOfWeek) % 7;
             const targetDate = now.add({ days: daysUntilWeekday === 0 ? 7 : daysUntilWeekday });
             return targetDate.startOfDay();

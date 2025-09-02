@@ -114,7 +114,8 @@ describe("TimeParser", () => {
         "Monday next week":
             (now) => {
                 const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
-                return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday + 7 }).startOfDay();
+                const targetDate = now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday });
+                return targetDate.startOfDay();
             },
         "Monday at 5 pm":
             (now) => {
