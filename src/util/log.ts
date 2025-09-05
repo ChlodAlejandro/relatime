@@ -1,5 +1,7 @@
+import { inspect } from "util";
 import * as winston from "winston";
 
+const splatSymbol = Symbol.for("splat");
 export const log = winston.createLogger({
     level: "debug",
     transports: [
@@ -10,7 +12,9 @@ export const log = winston.createLogger({
                 winston.format.colorize({ all: true }),
                 winston.format.timestamp(),
                 winston.format.align(),
-                winston.format.printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}`),
+                winston.format.printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}${
+                    info[splatSymbol] ? ` ${inspect(info[splatSymbol], true, 5, true)}` : ""
+                }`),
             ),
         }),
         new winston.transports.File({ filename: process.env.RT_LOG_PATH || "./data/relatime.log" }),
