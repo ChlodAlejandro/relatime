@@ -51,23 +51,22 @@ process.env.TZ = "Etc/UTC";
     const debugCommands =
         new Map(commands.entries().filter(([,command]) => command.type === "debug"));
 
+    log.info("Found " + debugCommands.size + " debug slash commands.");
+    for (const guildId of getOperatorGuilds()) {
+        await rest.put(
+            Routes.applicationGuildCommands(process.env.RT_DISCORD_CLIENT_ID!, guildId),
+            { body: [...commands.values().map(command => command.builder.toJSON())] },
+        ).then((result) => {
+            log.info(`Registered debug commands for ${guildId}.`, { result });
+        });
+    }
     log.info("Found " + globalCommands.size + " global slash commands.");
     await rest.put(
         Routes.applicationCommands(process.env.RT_DISCORD_CLIENT_ID!),
         { body: [...globalCommands.values().map(command => command.builder.toJSON())] },
     ).then((result) => {
-        log.info("Registered global commands.", result);
+        log.info("Registered global commands.", { result });
     });
-
-    log.info("Found " + debugCommands.size + " debug slash commands.");
-    for (const guildId of getOperatorGuilds()) {
-        await rest.put(
-            Routes.applicationGuildCommands(process.env.RT_DISCORD_CLIENT_ID!, guildId),
-            { body: [...debugCommands.values().map(command => command.builder.toJSON())] },
-        ).then((result) => {
-            log.info(`Registered debug commands for ${guildId}.`, result);
-        });
-    }
 
     const client = new Client({
         intents: [
