@@ -1,10 +1,9 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
-import { getDb } from "../../database";
 import { getUserConfig } from "../../database/config.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
 import { successEmbed } from "../../embeds/successEmbed.ts";
-import { ISlashCommand } from "../types.ts";
 import getTimeMatches from "../../util/getTimeMatches.ts";
+import { ISlashCommand } from "../types.ts";
 
 export const parse = <ISlashCommand>{
     type: "global",
@@ -43,6 +42,7 @@ export const parse = <ISlashCommand>{
             interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
+                    interaction.client,
                     "No times found",
                     "Could not find any relative or absolute times in the last message.",
                 )],
@@ -59,6 +59,7 @@ export const parse = <ISlashCommand>{
                     content,
                 } : {
                     embeds: [successEmbed(
+                        interaction.client,
                         "Parsed times",
                         content || "No times found in the provided text.",
                     )],

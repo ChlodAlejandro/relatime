@@ -25,6 +25,7 @@ export const last = <ISlashCommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
+                    interaction.client,
                     "Error fetching messages",
                     "Could not fetch messages from this channel. Check if the bot can read the channel.",
                 )],
@@ -40,6 +41,7 @@ export const last = <ISlashCommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
+                    interaction.client,
                     "No previous message",
                     "There is no previous message in this channel to process.",
                 )],
@@ -69,6 +71,7 @@ export const last = <ISlashCommand>{
             interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
+                    interaction.client,
                     "No times found",
                     "Could not find any relative or absolute times in the last message.",
                 )],

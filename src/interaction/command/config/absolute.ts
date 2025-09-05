@@ -25,6 +25,7 @@ export const absolute = <ISlashSubcommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [successEmbed(
+                    interaction.client,
                     "Absolute timestamps configuration",
                     'Enables replying with timestamps when an absolute time (e.g. "9pm", "Monday at 5pm") is mentioned.',
                 ).addFields({
@@ -40,6 +41,7 @@ export const absolute = <ISlashSubcommand>{
         await interaction.reply({
             flags: MessageFlags.Ephemeral,
             embeds: [successEmbed(
+                interaction.client,
                 `Absolute timestamps ${enabled ? "enabled" : "disabled"}`,
                 `You will ${enabled ? "now" : "no longer"} receive replies with timestamps when you mention an absolute time.`,
             )],

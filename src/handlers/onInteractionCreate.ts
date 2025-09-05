@@ -14,7 +14,11 @@ export default async function onInteractionCreate(...args: ClientEvents["interac
             log.warn(`No command matched for interaction: ${interaction.commandName}`);
             interaction.reply({
                 ephemeral: true,
-                embeds: [errorEmbed("Unknown command", "This command is not recognized by the bot. It may have been removed or is otherwise unavailable.")],
+                embeds: [errorEmbed(
+                    interaction.client,
+                    "Unknown command",
+                    "This command is not recognized by the bot. It may have been removed or is otherwise unavailable.",
+                )],
             });
             return;
         }
@@ -25,6 +29,7 @@ export default async function onInteractionCreate(...args: ClientEvents["interac
                 log.error(`Error executing command ${interaction.commandName}:`, err);
                 console.error(err);
                 const embed = errorEmbed(
+                    interaction.client,
                     "Error executing command",
                     "An error occurred while executing the command. Please try again later.",
                 );

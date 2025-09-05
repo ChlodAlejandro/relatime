@@ -25,6 +25,7 @@ export const relative = <ISlashSubcommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [successEmbed(
+                    interaction.client,
                     "Relative timestamps configuration",
                     'Enables replying with timestamps when a relative time (e.g. "in 2 hours") is mentioned.',
                 ).addFields({
@@ -40,6 +41,7 @@ export const relative = <ISlashSubcommand>{
         await interaction.reply({
             flags: MessageFlags.Ephemeral,
             embeds: [successEmbed(
+                interaction.client,
                 `Relative timestamps ${enabled ? "enabled" : "disabled"}`,
                 `You will ${enabled ? "now" : "no longer"} receive replies with timestamps when you mention a relative time.`,
             )],

@@ -23,6 +23,7 @@ export const databaseupgrade = <ISlashCommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
+                    interaction.client,
                     "Insufficient permissions",
                     "You do not have permission to use this command.",
                 )],
@@ -34,6 +35,7 @@ export const databaseupgrade = <ISlashCommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
+                    interaction.client,
                     "Unavailable option",
                     "The `version` option is only available during development.",
                 )],
@@ -50,6 +52,7 @@ export const databaseupgrade = <ISlashCommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [errorEmbed(
+                    interaction.client,
                     "Version not found",
                     "Could not determine the current version of the bot. Cannot proceed with database upgrade.",
                 )],
@@ -73,6 +76,7 @@ export const databaseupgrade = <ISlashCommand>{
         await interaction.reply({
             flags: MessageFlags.Ephemeral,
             embeds: [successEmbed(
+                interaction.client,
                 "Database upgrade complete",
                 appliedUpgrades.length
                     ? `Applied the following upgrades:\n- ${appliedUpgrades.join("\n- ")}`

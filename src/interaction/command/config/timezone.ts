@@ -30,6 +30,7 @@ export const timezone = <ISlashSubcommand>{
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [successEmbed(
+                    interaction.client,
                     "Timezone configuration",
                     "Set your local timezone.",
                 ).addFields({
@@ -67,6 +68,7 @@ export const timezone = <ISlashSubcommand>{
                 flags: MessageFlags.Ephemeral,
                 embeds: [
                     errorEmbed(
+                        interaction.client,
                         "Unrecognized timezone",
                         "The timezone you gave could not be recognized. For best results, use a [TZ identifier](<https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>) (such as \"America/New York\"), especially if your timezone uses daylight savings, or a UTC offset (such as \"UTC+07:00\").",
                     ),
@@ -100,6 +102,7 @@ export const timezone = <ISlashSubcommand>{
                 flags: MessageFlags.Ephemeral,
                 embeds: [
                     successEmbed(
+                        interaction.client,
                         "Timezone set",
                         description,
                     ),
@@ -135,6 +138,7 @@ export const timezone = <ISlashSubcommand>{
                 flags: MessageFlags.Ephemeral,
                 embeds: [
                     successEmbed(
+                        interaction.client,
                         "Timezone set",
                         description,
                     ),
