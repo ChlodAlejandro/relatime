@@ -1,4 +1,4 @@
-import { MessageFlags, SlashCommandBuilder } from "discord.js";
+import { Collection, DiscordAPIError, Message, MessageFlags, SlashCommandBuilder } from "discord.js";
 import { getUserConfig } from "../../database/config.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
 import getTimeMatches from "../../util/getTimeMatches.ts";
@@ -20,7 +20,23 @@ export const last = <ISlashCommand>{
         if (!interaction.isChatInputCommand()) return;
 
         // Get the last message in the channel
-        const messages = await interaction.channel?.messages.fetch({ limit: 10 });
+        let messages: Collection<string, Message<true>>;
+        try {
+            messages = await interaction.channel?.messages.fetch({ limit: 10 });
+        } catch (e) {
+            if (e instanceof DiscordAPIError && e.code === 50001) {
+                await interaction.reply({
+                    flags: MessageFlags.Ephemeral,
+                    embeds: [errorEmbed(
+                        interaction.client,
+                        "Insufficient permissions",
+                        "The bot does not have permission to read message history in this channel.",
+                    )],
+                });
+                return;
+            }
+            throw e;
+        }
         if (!messages) {
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,

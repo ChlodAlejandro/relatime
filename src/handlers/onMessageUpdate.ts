@@ -1,4 +1,4 @@
-import { ClientEvents, Message } from "discord.js";
+import { ClientEvents, DiscordAPIError, Message } from "discord.js";
 import { getUserConfig } from "../database/config.ts";
 import { getMessageBotReply } from "../database/trackedMessages.ts";
 import { log } from "../util/log.ts";
@@ -43,7 +43,7 @@ export default async function onMessageUpdate(...args: ClientEvents["messageUpda
             try {
                 botReplyMessage = await message.channel.messages.fetch(botReply);
             } catch (e) {
-                if (e.code == 10008) {
+                if (e instanceof DiscordAPIError && e.code == 10008) {
                     // Unknown Message, the bot's reply message is gone?
                     // Resend it.
                     await processIfRecent();
