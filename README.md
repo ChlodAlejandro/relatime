@@ -1,6 +1,8 @@
 # relatime
 Converts relative time in chat to Discord timestamps based on the user's timezone.
 
+[Invite the bot on Discord](https://discord.com/oauth2/authorize?client_id=1405466156063522937)
+
 ## Features
 - Converts relative time expressions (e.g., "in 5 minutes", "tomorrow at 3 pm")
 - Converts absolute time expressions (e.g., "9pm", "tomorrow at 3 pm")
