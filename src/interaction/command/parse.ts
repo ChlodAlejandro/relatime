@@ -36,7 +36,7 @@ export const parse = <ISlashCommand>{
         const printMode = interaction.options.getBoolean("print");
 
         const matches = getTimeMatches(interaction.options.getString("text"), timezone, {
-            includeCode: printMode,
+            includeCode: !printMode,
         });
         if (!matches) {
             interaction.reply({
@@ -50,7 +50,9 @@ export const parse = <ISlashCommand>{
             return;
         }
         content += matches!;
-        content += "\n-# [view the timestamp styles reference](<https://discord.com/developers/docs/reference#message-formatting-timestamp-styles>)";
+        if (!printMode) {
+            content += "\n-# [view the timestamp styles reference](<https://discord.com/developers/docs/reference#message-formatting-timestamp-styles>)";
+        }
 
         await interaction.reply({
             flags: printMode ? undefined : MessageFlags.Ephemeral,
