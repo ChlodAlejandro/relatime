@@ -20,7 +20,7 @@ export const durationUnits = {
 export type DurationUnit = keyof typeof durationUnits;
 export const durationUnitShorthandRegexes: Record<DurationUnit, RegExp> = {
     second: /s|secs?/,
-    minute: /m(?!o)|min/,
+    minute: /m(?!o)|mins?/,
     hour: /h|hr/,
     day: /dy?/,
     week: /w|wk/,
