@@ -126,8 +126,9 @@ describe("TimeParser", () => {
             },
         "Monday at 5 pm":
             (now) => {
+                // Should be the next Monday or this Monday if today is Monday
                 const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
-                return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday }).startOfDay().add({ hours: 17 });
+                return now.add({ days: daysUntilMonday }).startOfDay().add({ hours: 17 });
             },
         "next Monday at 5 pm":
             (now) => {
@@ -136,8 +137,8 @@ describe("TimeParser", () => {
             },
         "Monday 5 pm":
             (now) => {
-                const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
-                return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday }).startOfDay().add({ hours: 17 });
+                const daysUntilMonday = now.dayOfWeek === 1 ? 0 : (1 + 7 - now.dayOfWeek) % 7;
+                return now.add({ days: daysUntilMonday }).startOfDay().add({ hours: 17 });
             },
         "2 a.m.":
             (now) => now.startOfDay().add({ hours: 2 }),
