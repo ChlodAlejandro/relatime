@@ -12,7 +12,6 @@ export default async function onInteractionCreate(...args: ClientEvents["interac
         log.warn(`Unsupported interaction type: ${type}`);
         return;
     }
-    console.debug("", interaction.commandName, await loadCommands().then(a => a.keys()));
     const matched = (await loadCommands()).get(interaction.commandName);
 
     if (!matched) {
