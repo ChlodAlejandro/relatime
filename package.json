@@ -1,7 +1,7 @@
 {
     "private": true,
     "name": "relatime",
-    "version": "0.1.5",
+    "version": "0.2.0",
     "description": "Converts relative time in chat to Discord timestamps based on the user's timezone.",
     "main": "src/bot.ts",
     "directories": {
