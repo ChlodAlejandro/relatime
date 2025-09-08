@@ -5,7 +5,7 @@ import { dbExists, getDb, setupDb } from "./database";
 import onInteractionCreate from "./handlers/onInteractionCreate.ts";
 import onMessageCreate from "./handlers/onMessageCreate.ts";
 import onMessageUpdate from "./handlers/onMessageUpdate.ts";
-import { loadSlashCommands } from "./interaction/loader";
+import { loadCommands } from "./interaction/loader";
 import { getOperatorGuilds } from "./util/isOperatorGuild.ts";
 import { log } from "./util/log.ts";
 
@@ -45,7 +45,7 @@ process.env.TZ = "Etc/UTC";
 
     log.info("Registering interactions...");
 
-    const commands = await loadSlashCommands();
+    const commands = await loadCommands();
     const globalCommands =
         new Map(commands.entries().filter(([,command]) => command.type === "global"));
     const debugCommands =

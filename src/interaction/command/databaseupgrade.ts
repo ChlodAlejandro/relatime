@@ -4,9 +4,9 @@ import { errorEmbed } from "../../embeds/errorEmbed.ts";
 import { successEmbed } from "../../embeds/successEmbed.ts";
 import isOperator from "../../util/isOperator.ts";
 import { version } from "../../version.ts";
-import { ISlashCommand } from "../types.ts";
+import { ICommand } from "../types.ts";
 
-export const databaseupgrade = <ISlashCommand>{
+export const databaseupgrade = <ICommand>{
     type: "debug",
     builder: new SlashCommandBuilder()
         .setName("databaseupgrade")

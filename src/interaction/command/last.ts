@@ -3,9 +3,9 @@ import { getUserConfig } from "../../database/config.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
 import getTimeMatches from "../../util/getTimeMatches.ts";
 import timezoneToString from "../../util/timezoneToString.ts";
-import { ISlashCommand } from "../types.ts";
+import { ICommand } from "../types.ts";
 
-export const last = <ISlashCommand>{
+export const last = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("last")

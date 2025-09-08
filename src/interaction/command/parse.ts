@@ -3,9 +3,9 @@ import { getUserConfig } from "../../database/config.ts";
 import { errorEmbed } from "../../embeds/errorEmbed.ts";
 import { successEmbed } from "../../embeds/successEmbed.ts";
 import getTimeMatches from "../../util/getTimeMatches.ts";
-import { ISlashCommand } from "../types.ts";
+import { ICommand } from "../types.ts";
 
-export const parse = <ISlashCommand>{
+export const parse = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("parse")

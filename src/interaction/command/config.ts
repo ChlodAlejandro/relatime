@@ -1,10 +1,10 @@
 import { Interaction, SlashCommandBuilder } from "discord.js";
-import { ISlashCommand } from "../types";
+import { ICommand } from "../types";
 import { absolute } from "./config/absolute";
 import { relative } from "./config/relative";
 import { timezone } from "./config/timezone";
 
-export const config = <ISlashCommand>{
+export const config = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("config")
