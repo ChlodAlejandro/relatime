@@ -65,8 +65,9 @@ export default function getTimeMatches(
             const since = now.since(match.date);
             // Bad type.
             // https://github.com/fullcalendar/temporal-polyfill/issues/59
-            // eslint-disable-next-line
-            const duration = (since.round({ smallestUnit: "second" }).toLocaleString as any)("en", { style: "narrow" });
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            const duration = since.round({ smallestUnit: "second" }).toLocaleString("en", { style: "narrow" });
             notes.push(since.sign === -1 ? `in ${duration}` : `${duration} ago`);
         }
         if (options.includeCode) {
