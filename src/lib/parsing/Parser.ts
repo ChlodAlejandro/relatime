@@ -1,5 +1,5 @@
-import cloneRegex from "../util/cloneRegex.ts";
-import combineRegex from "../util/combineRegex.ts";
+import cloneRegex from "../../util/cloneRegex.ts";
+import combineRegex from "../../util/combineRegex.ts";
 
 /**
  * Simplified token parser for normal text.

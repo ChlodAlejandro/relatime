@@ -1,6 +1,6 @@
 import { Temporal } from "temporal-polyfill";
-import { DurationUnit } from "../parsing/Duration.ts";
-import TimeParser, { TimeParserMode } from "../parsing/TimeParser.ts";
+import { DurationUnit } from "../lib/parsing/Duration.ts";
+import TimeParser, { TimeParserMode } from "../lib/parsing/TimeParser.ts";
 
 /**
  * Timestamp flags to use for different precision levels. Each letter generates another timestamp, joined by commas.

@@ -1,4 +1,4 @@
-import Parser from "../../src/parsing/Parser";
+import Parser from "../../src/lib/parsing/Parser";
 
 describe("Parser", () => {
     it("parses the next word correctly", () => {
