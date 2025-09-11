@@ -2,7 +2,7 @@ import { inspect } from "util";
 import * as winston from "winston";
 
 const splatSymbol = Symbol.for("splat");
-export const log = winston.createLogger({
+const log = winston.createLogger({
     level: "debug",
     transports: [
         new winston.transports.Console({
@@ -20,3 +20,7 @@ export const log = winston.createLogger({
         new winston.transports.File({ filename: process.env.RT_LOG_PATH || "./data/relatime.log" }),
     ],
 });
+
+export function getLogger(module: string) {
+    return log.child({ module });
+}

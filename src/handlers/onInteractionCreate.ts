@@ -1,12 +1,20 @@
 import { ClientEvents, InteractionType, MessageFlags } from "discord.js";
 import { errorEmbed } from "../embeds/errorEmbed.ts";
 import { loadCommands } from "../interaction/loader.ts";
-import { log } from "../util/log.ts";
+import Relatime from "../Relatime.ts";
 
 export default async function onInteractionCreate(...args: ClientEvents["interactionCreate"]) {
     const [interaction] = args;
 
     const type = InteractionType[interaction.type];
+    const log = Relatime.getLogger("onInteractionCreate", {
+        interaction: {
+            id: interaction.id,
+            user: interaction.user?.id,
+            type: InteractionType[interaction.type],
+            guild: interaction.guildId,
+        },
+    });
     log.info(`Interaction received: ${interaction.id} (${type}) from ${interaction.user.tag}`);
     if (!interaction.isChatInputCommand() && !interaction.isContextMenuCommand()) {
         log.warn(`Unsupported interaction type: ${type}`);

@@ -1,7 +1,7 @@
 import { ClientEvents, DiscordAPIError, Message } from "discord.js";
 import { getUserConfig } from "../database/config.ts";
 import { getMessageBotReply } from "../database/trackedMessages.ts";
-import { log } from "../util/log.ts";
+import Relatime from "../Relatime.ts";
 import handleMessage, { MessageType } from "./util/handleMessage.ts";
 
 export default async function onMessageUpdate(...args: ClientEvents["messageUpdate"]) {
@@ -11,7 +11,7 @@ export default async function onMessageUpdate(...args: ClientEvents["messageUpda
     if (message.author.bot) return;
 
     if (process.env.NODE_ENV !== "production")
-        log.debug(`Message edit from ${message.author.tag} (${message.author.id}): ${message.content}`);
+        Relatime.getLogger("debug").debug(`Message edit from ${message.author.tag} (${message.author.id}): ${message.content}`);
 
     const userConfig = await getUserConfig(message.author.id, <const>["relative", "absolute", "timezone"]);
 

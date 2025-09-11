@@ -10,6 +10,7 @@ import onInteractionCreate from "./handlers/onInteractionCreate.ts";
 import onMessageCreate from "./handlers/onMessageCreate.ts";
 import onMessageUpdate from "./handlers/onMessageUpdate.ts";
 import { loadCommands } from "./interaction/loader";
+import RelatimeClient from "./RelatimeClient.ts";
 import { getOperatorGuilds } from "./util/isOperatorGuild.ts";
 
 const cwd = process.cwd();
@@ -46,7 +47,7 @@ class Relatime {
     public log: Logger;
     public db: Knex;
     public rest: REST;
-    public client: Client;
+    public client: RelatimeClient;
 
     // Helper methods
 
@@ -71,6 +72,12 @@ class Relatime {
     private onExitSignal() {
         // noinspection JSIgnoredPromiseFromCall
         Relatime.i.stop();
+    }
+
+    public getLogger(module: string, options?: Record<string, unknown>) {
+        return this.log.child(
+            Object.assign({}, options ?? {}, { module, client: this.client.id }),
+        );
     }
 
     // Lifecycle methods
@@ -122,7 +129,7 @@ class Relatime {
         this.rest = new REST().setToken(process.env.RT_DISCORD_TOKEN!);
 
         // Construct and prepare the gateway client
-        this.client = new Client({
+        this.client = new RelatimeClient({
             intents: [
                 GatewayIntentBits.DirectMessages,
                 GatewayIntentBits.Guilds,

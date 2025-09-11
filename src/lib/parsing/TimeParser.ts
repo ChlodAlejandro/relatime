@@ -2,7 +2,6 @@ import { Temporal } from "temporal-polyfill";
 import cloneRegex from "../../util/cloneRegex.ts";
 import combineRegex from "../../util/combineRegex.ts";
 import stringMatcher from "../../util/convertToStringMatch.ts";
-import { log } from "../../util/log.ts";
 import {
     DurationUnit, durationUnitFullRegexes,
     durationUnitRegexCaseInsensitive, durationUnitRegexCaseSensitive,
@@ -185,12 +184,6 @@ export default class TimeParser extends Parser {
             }
 
             if (lastIndex === this.index) {
-                if (process.env.NODE_ENV !== "production") {
-                    log.warn(
-                        "Parser did not advance!",
-                        { source: this.source, working: this.working, index: this.index },
-                    );
-                }
                 // No progress made, consume a character to avoid infinite loops.
                 this.consume();
             }
