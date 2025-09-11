@@ -1,6 +1,8 @@
 import { Temporal } from "temporal-polyfill";
+import { Logger } from "winston";
 import { DurationUnit } from "../lib/parsing/Duration.ts";
 import TimeParser, { TimeParserMode } from "../lib/parsing/TimeParser.ts";
+import Relatime from "../Relatime.ts";
 
 /**
  * Timestamp flags to use for different precision levels. Each letter generates another timestamp, joined by commas.
@@ -19,7 +21,8 @@ const precisionSyntaxFlags: Record<DurationUnit, string> = {
 interface TimeMatchesOptions {
     includeCode: boolean;
     includeExactRelative: boolean;
-    modes: TimeParserMode[]
+    modes: TimeParserMode[];
+    log: Logger;
 }
 
 export default function getTimeMatches(
@@ -28,7 +31,16 @@ export default function getTimeMatches(
     options: Partial<TimeMatchesOptions> = {},
 ): string | null {
     let content = "";
-    const timeMatches = new TimeParser(input, timezone).parse(options.modes);
+    const parser = new TimeParser(input, timezone, {
+        defaultMode: options.modes,
+    });
+    parser.onWarning.subscribe((event) => {
+        const message = event.message;
+        delete event.message;
+        (options.log?.child({ module: "TimeParser" }) ?? Relatime.getLogger("TimeParser"))
+            .warn(message, event);
+    });
+    const timeMatches = parser.parse();
 
     if (timeMatches.length === 0) {
         return null;

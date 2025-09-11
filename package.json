@@ -34,6 +34,7 @@
         "dotenv": "^17.2.1",
         "keyv": "^5.5.0",
         "knex": "^3.1.0",
+        "ste-simple-events": "^3.0.11",
         "temporal-polyfill": "^0.3.0",
         "timezone-soft": "^1.5.2",
         "ts-node": "^10.9.2",

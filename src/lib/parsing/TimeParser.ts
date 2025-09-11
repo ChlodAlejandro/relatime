@@ -1,3 +1,4 @@
+import { SimpleEventDispatcher } from "ste-simple-events";
 import { Temporal } from "temporal-polyfill";
 import cloneRegex from "../../util/cloneRegex.ts";
 import combineRegex from "../../util/combineRegex.ts";
@@ -24,6 +25,28 @@ export interface AbsoluteTimeMatch {
 export enum TimeParserMode {
     Absolute,
     Relative,
+}
+
+export interface TimeParserWarningEvent {
+    message: string;
+    source: string;
+    index: number;
+    startIndex: number;
+    word: string;
+}
+
+export interface TimeParserOptions {
+    /**
+     * Set the default time parsing mode. This can be overridden by the `modes` parameter in {@link parse}.
+     */
+    defaultMode?: TimeParserMode[];
+    /**
+     * Provide a "now" provider. This is useful for testing or when using a different time source, such as when
+     * the local device's time cannot be trusted.
+     *
+     * @param timeZoneId The timezone ID that the time should be provided in, e.g. "America/New_York", "+08:00".
+     */
+    nowProvider?: (timeZoneId: string) => Temporal.ZonedDateTime;
 }
 
 export default class TimeParser extends Parser {
@@ -112,18 +135,33 @@ export default class TimeParser extends Parser {
         /^(?:an?|one)$/;
 
     readonly timeZoneId: string;
+    private readonly _nowProvider: TimeParserOptions["nowProvider"];
+    private readonly _defaultMode: TimeParserMode[] = [TimeParserMode.Absolute, TimeParserMode.Relative];
+    private _onWarning = new SimpleEventDispatcher<TimeParserWarningEvent>();
 
-    constructor(text: string, timezone: string) {
+    public get onWarning() {
+        return this._onWarning.asEvent();
+    }
+
+    constructor(text: string, timezone: string, options: TimeParserOptions = {}) {
         super(text);
 
         this.timeZoneId = timezone;
+
+        if (options.nowProvider)
+            this._nowProvider = options.nowProvider;
+        if (options.defaultMode != null)
+            this._defaultMode = options.defaultMode;
     }
 
     public now(): Temporal.ZonedDateTime {
-        return Temporal.Now.zonedDateTimeISO(this.timeZoneId);
+        return this._nowProvider ?
+            this._nowProvider(this.timeZoneId) :
+            Temporal.Now.zonedDateTimeISO(this.timeZoneId);
     }
 
-    public parse(modes = [TimeParserMode.Absolute, TimeParserMode.Relative]): AbsoluteTimeMatch[] {
+    public parse(modes?: TimeParserMode[]): AbsoluteTimeMatch[] {
+        modes = modes ?? this._defaultMode;
         const matches: (AbsoluteTimeMatch | null)[] = [];
 
         // Go through each word and see if it matches an expression we need.
@@ -184,6 +222,15 @@ export default class TimeParser extends Parser {
             }
 
             if (lastIndex === this.index) {
+                if (process.env.NODE_ENV !== "production") {
+                    this._onWarning.dispatch({
+                        message: "Parser did not advance",
+                        source: this.source,
+                        index: this.index,
+                        startIndex,
+                        word,
+                    });
+                }
                 // No progress made, consume a character to avoid infinite loops.
                 this.consume();
             }
