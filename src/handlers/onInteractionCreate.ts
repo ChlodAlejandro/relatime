@@ -39,7 +39,6 @@ export default async function onInteractionCreate(...args: ClientEvents["interac
         ?.execute(interaction)
         .catch(err => {
             log.error(`Error executing command ${interaction.commandName}:`, err);
-            console.error(err);
             const embed = errorEmbed(
                 interaction.client,
                 "Error executing command",
