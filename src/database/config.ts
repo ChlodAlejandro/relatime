@@ -3,8 +3,7 @@ import { getDb } from "./index.ts";
 
 const CACHE_EXPIRE = 3 * 60 * 1e3; // 3 minutes
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function getUserConfig<T extends string[]>(id: string, keys: T): Promise<{ [K in T[number]]: any | null }> {
+export async function getUserConfig<T extends string[]>(id: string, keys: T): Promise<{ [K in T[number]]: string | null }> {
     const keyv = getKeyv();
 
     const result = {};

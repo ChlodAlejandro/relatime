@@ -7,14 +7,14 @@ export type MessageType = OmitPartialGroupDMChannel<Message | PartialMessage>;
 
 export default async function handleMessage(
     message: MessageType,
-    userConfig: { relative: boolean; absolute: boolean; timezone: string | null },
+    userConfig: { relative: string; absolute: string; timezone: string | null },
     botReply?: MessageType,
 ) {
     const { relative, absolute, timezone } = userConfig;
 
     const parserFlags = [];
-    if (relative) parserFlags.push(TimeParserMode.Relative);
-    if (absolute) parserFlags.push(TimeParserMode.Absolute);
+    if (relative === "true") parserFlags.push(TimeParserMode.Relative);
+    if (absolute === "true") parserFlags.push(TimeParserMode.Absolute);
 
     let reply = "";
     const matched = getTimeMatches(message.content, timezone ?? "UTC", {
