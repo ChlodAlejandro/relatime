@@ -21,6 +21,12 @@ export const parse = <ICommand>{
                 .setName("print")
                 .setDescription("Whether to send the result in the current channel.")
                 .setRequired(false),
+        )
+        .addBooleanOption((option) =>
+            option
+                .setName("exact")
+                .setDescription("Whether to send exact relative timestamps, which only apply at the time the message is sent.")
+                .setRequired(false),
         ),
     async execute(interaction) {
         if (!interaction.isChatInputCommand()) return;
@@ -36,6 +42,7 @@ export const parse = <ICommand>{
         const printMode = interaction.options.getBoolean("print");
 
         const matches = getTimeMatches(interaction.options.getString("text"), timezone, {
+            includeExactRelative: interaction.options.getBoolean("exact") ?? false,
             includeCode: !printMode,
         });
         if (!matches) {

@@ -1,3 +1,4 @@
+import { Temporal } from "temporal-polyfill";
 import { DurationUnit } from "../parsing/Duration.ts";
 import TimeParser, { TimeParserMode } from "../parsing/TimeParser.ts";
 
@@ -17,6 +18,7 @@ const precisionSyntaxFlags: Record<DurationUnit, string> = {
 
 interface TimeMatchesOptions {
     includeCode: boolean;
+    includeExactRelative: boolean;
     modes: TimeParserMode[]
 }
 
@@ -46,6 +48,15 @@ export default function getTimeMatches(
         if (match.approximated) notes.push("approximated");
         if (!match.relative) notes.push(`<t:${epoch}:R>`);
 
+        if (!match.relative && options.includeExactRelative) {
+            const now = Temporal.Now.zonedDateTimeISO();
+            const since = now.since(match.date);
+            // Bad type.
+            // https://github.com/fullcalendar/temporal-polyfill/issues/59
+            // eslint-disable-next-line
+            const duration = (since.round({ smallestUnit: "second" }).toLocaleString as any)("en", { style: "narrow" });
+            notes.push(since.sign === -1 ? `in ${duration}` : `${duration} ago`);
+        }
         if (options.includeCode) {
             notes.push(`\`<t:${epoch}:f>\``);
         }
