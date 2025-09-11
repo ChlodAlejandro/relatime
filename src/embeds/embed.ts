@@ -1,5 +1,5 @@
 import { Client, EmbedBuilder } from "discord.js";
-import { version } from "../version.ts";
+import { version } from "../version";
 
 export function embed(client: Client): EmbedBuilder {
     return new EmbedBuilder()

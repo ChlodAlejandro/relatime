@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { ICommand } from "../types.ts";
+import { ICommand } from "../types";
 
 export const crash = <ICommand>{
     type: "debug",

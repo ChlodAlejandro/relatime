@@ -6,12 +6,12 @@ import { inspect } from "util";
 import * as winston from "winston";
 import { Logger } from "winston";
 import { dbExists, getDb, setupDb } from "./database";
-import onInteractionCreate from "./handlers/onInteractionCreate.ts";
-import onMessageCreate from "./handlers/onMessageCreate.ts";
-import onMessageUpdate from "./handlers/onMessageUpdate.ts";
+import onInteractionCreate from "./handlers/onInteractionCreate";
+import onMessageCreate from "./handlers/onMessageCreate";
+import onMessageUpdate from "./handlers/onMessageUpdate";
 import { loadCommands } from "./interaction/loader";
-import RelatimeClient from "./RelatimeClient.ts";
-import { getOperatorGuilds } from "./util/isOperatorGuild.ts";
+import RelatimeClient from "./RelatimeClient";
+import { getOperatorGuilds } from "./util/isOperatorGuild";
 
 const cwd = process.cwd();
 

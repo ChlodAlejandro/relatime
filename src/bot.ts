@@ -1,3 +1,3 @@
-import Relatime from "./Relatime.ts";
+import Relatime from "./Relatime";
 
 Relatime.start();

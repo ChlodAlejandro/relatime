@@ -37,8 +37,6 @@
         "ste-simple-events": "^3.0.11",
         "temporal-polyfill": "^0.3.0",
         "timezone-soft": "^1.5.2",
-        "ts-node": "^10.9.2",
-        "tsconfig-paths": "^4.2.0",
         "winston": "^3.17.0"
     },
     "devDependencies": {
@@ -49,6 +47,8 @@
         "globals": "^16.3.0",
         "jest": "^30.1.1",
         "ts-jest": "^29.4.1",
+        "ts-node": "^10.9.2",
+        "tsconfig-paths": "^4.2.0",
         "typescript": "^5.9.2",
         "typescript-eslint": "^8.41.0"
     }

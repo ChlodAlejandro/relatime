@@ -3,7 +3,7 @@
  * seem to show seconds anyway.
  */
 
-import combineRegex from "../../util/combineRegex.ts";
+import combineRegex from "../../util/combineRegex";
 
 // These number values are only used for sorting.
 export const durationUnits = {

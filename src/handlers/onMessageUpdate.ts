@@ -1,8 +1,8 @@
 import { ClientEvents, DiscordAPIError, Message } from "discord.js";
-import { getUserConfig } from "../database/config.ts";
-import { getMessageBotReply } from "../database/trackedMessages.ts";
-import Relatime from "../Relatime.ts";
-import handleMessage, { MessageType } from "./util/handleMessage.ts";
+import { getUserConfig } from "../database/config";
+import { getMessageBotReply } from "../database/trackedMessages";
+import Relatime from "../Relatime";
+import handleMessage, { MessageType } from "./util/handleMessage";
 
 export default async function onMessageUpdate(...args: ClientEvents["messageUpdate"]) {
     const [, message] = args;

@@ -1,8 +1,8 @@
 import { Temporal } from "temporal-polyfill";
 import { Logger } from "winston";
-import { DurationUnit } from "../lib/parsing/Duration.ts";
-import TimeParser, { TimeParserMode } from "../lib/parsing/TimeParser.ts";
-import Relatime from "../Relatime.ts";
+import { DurationUnit } from "../lib/parsing/Duration";
+import TimeParser, { TimeParserMode } from "../lib/parsing/TimeParser";
+import Relatime from "../Relatime";
 
 /**
  * Timestamp flags to use for different precision levels. Each letter generates another timestamp, joined by commas.

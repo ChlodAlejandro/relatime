@@ -1,6 +1,6 @@
 import { Snowflake } from "discord.js";
-import getKeyv from "../util/getKeyv.ts";
-import { getDb } from "./index.ts";
+import getKeyv from "../util/getKeyv";
+import { getDb } from "./index";
 
 export async function getMessageBotReply(id: string): Promise<null | Snowflake> {
     const keyv = getKeyv();

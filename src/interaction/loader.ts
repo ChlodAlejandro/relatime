@@ -9,7 +9,7 @@ export async function loadCommands() {
         commands = new Map<string, ICommand>();
 
         const commandsPath = path.join(__dirname, "command");
-        const commandFiles = (await fs.readdir(commandsPath)).filter(file => file.endsWith(".ts"));
+        const commandFiles = (await fs.readdir(commandsPath)).filter(file => /\.[tj]s$/.test(file));
         for (const file of commandFiles) {
             const filePath = path.join(commandsPath, file);
             const command = await import(filePath);

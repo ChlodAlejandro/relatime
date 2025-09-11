@@ -1,9 +1,9 @@
 import { ApplicationCommandType, ContextMenuCommandBuilder, MessageFlags } from "discord.js";
-import { getUserConfig } from "../../database/config.ts";
-import { errorEmbed } from "../../embeds/errorEmbed.ts";
-import getTimeMatches from "../../util/getTimeMatches.ts";
-import timezoneToString from "../../util/timezoneToString.ts";
-import { ICommand } from "../types.ts";
+import { getUserConfig } from "../../database/config";
+import { errorEmbed } from "../../embeds/errorEmbed";
+import getTimeMatches from "../../util/getTimeMatches";
+import timezoneToString from "../../util/timezoneToString";
+import { ICommand } from "../types";
 
 export const parseTimes = <ICommand>{
     type: "global",

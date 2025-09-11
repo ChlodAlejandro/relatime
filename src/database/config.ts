@@ -1,5 +1,5 @@
-import getKeyv from "../util/getKeyv.ts";
-import { getDb } from "./index.ts";
+import getKeyv from "../util/getKeyv";
+import { getDb } from "./index";
 
 const CACHE_EXPIRE = 3 * 60 * 1e3; // 3 minutes
 

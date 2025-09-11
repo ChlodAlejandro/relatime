@@ -1,7 +1,7 @@
 import { ClientEvents, InteractionType, MessageFlags } from "discord.js";
-import { errorEmbed } from "../embeds/errorEmbed.ts";
-import { loadCommands } from "../interaction/loader.ts";
-import Relatime from "../Relatime.ts";
+import { errorEmbed } from "../embeds/errorEmbed";
+import { loadCommands } from "../interaction/loader";
+import Relatime from "../Relatime";
 
 export default async function onInteractionCreate(...args: ClientEvents["interactionCreate"]) {
     const [interaction] = args;

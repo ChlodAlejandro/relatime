@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
-import { getUserConfig, setUserConfig } from "../../../database/config.ts";
-import { successEmbed } from "../../../embeds/successEmbed.ts";
+import { getUserConfig, setUserConfig } from "../../../database/config";
+import { successEmbed } from "../../../embeds/successEmbed";
 import { ISlashSubcommand } from "../../types";
 
 export const absolute = <ISlashSubcommand>{

@@ -5,6 +5,10 @@
         "moduleResolution": "Node",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "allowImportingTsExtensions": true
-    }
+        "sourceMap": true,
+        "outDir": "build/"
+    },
+    "include": [
+        "src/**/*"
+    ]
 }

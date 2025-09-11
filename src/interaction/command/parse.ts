@@ -1,9 +1,9 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
-import { getUserConfig } from "../../database/config.ts";
-import { errorEmbed } from "../../embeds/errorEmbed.ts";
-import { successEmbed } from "../../embeds/successEmbed.ts";
-import getTimeMatches from "../../util/getTimeMatches.ts";
-import { ICommand } from "../types.ts";
+import { getUserConfig } from "../../database/config";
+import { errorEmbed } from "../../embeds/errorEmbed";
+import { successEmbed } from "../../embeds/successEmbed";
+import getTimeMatches from "../../util/getTimeMatches";
+import { ICommand } from "../types";
 
 export const parse = <ICommand>{
     type: "global",

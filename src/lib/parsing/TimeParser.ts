@@ -1,16 +1,16 @@
 import { SimpleEventDispatcher } from "ste-simple-events";
 import { Temporal } from "temporal-polyfill";
-import cloneRegex from "../../util/cloneRegex.ts";
-import combineRegex from "../../util/combineRegex.ts";
-import stringMatcher from "../../util/convertToStringMatch.ts";
+import cloneRegex from "../../util/cloneRegex";
+import combineRegex from "../../util/combineRegex";
+import stringMatcher from "../../util/convertToStringMatch";
 import {
     DurationUnit, durationUnitFullRegexes,
     durationUnitRegexCaseInsensitive, durationUnitRegexCaseSensitive,
     durationUnitRegexes, durationUnits, durationUnitShorthandRegexes,
     getSmallestDurationUnit,
     unitCompare,
-} from "./Duration.ts";
-import Parser from "./Parser.ts";
+} from "./Duration";
+import Parser from "./Parser";
 
 type Precision = "second" | "minute" | "hour" | "day";
 export interface AbsoluteTimeMatch {

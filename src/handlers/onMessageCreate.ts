@@ -1,7 +1,7 @@
 import { ClientEvents } from "discord.js";
-import { getUserConfig } from "../database/config.ts";
-import Relatime from "../Relatime.ts";
-import handleMessage from "./util/handleMessage.ts";
+import { getUserConfig } from "../database/config";
+import Relatime from "../Relatime";
+import handleMessage from "./util/handleMessage";
 
 export default async function onMessageCreate(...args: ClientEvents["messageCreate"]) {
     const [message] = args;

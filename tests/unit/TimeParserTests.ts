@@ -1,5 +1,5 @@
 import { Temporal } from "temporal-polyfill";
-import TimeParser from "../../src/lib/parsing/TimeParser.ts";
+import TimeParser from "../../src/lib/parsing/TimeParser";
 
 describe("TimeParser", () => {
 

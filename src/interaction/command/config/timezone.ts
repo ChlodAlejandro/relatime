@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
 import soft, { DisplayFormat } from "timezone-soft";
-import { getUserConfig, setUserConfig } from "../../../database/config.ts";
+import { getUserConfig, setUserConfig } from "../../../database/config";
 import { errorEmbed } from "../../../embeds/errorEmbed";
 import { successEmbed } from "../../../embeds/successEmbed";
 import dateToString from "../../../util/dateToString";

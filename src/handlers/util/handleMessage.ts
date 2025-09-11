@@ -1,7 +1,7 @@
 import { Message, OmitPartialGroupDMChannel, PartialMessage } from "discord.js";
-import { trackMessage } from "../../database/trackedMessages.ts";
-import { TimeParserMode } from "../../lib/parsing/TimeParser.ts";
-import getTimeMatches from "../../util/getTimeMatches.ts";
+import { trackMessage } from "../../database/trackedMessages";
+import { TimeParserMode } from "../../lib/parsing/TimeParser";
+import getTimeMatches from "../../util/getTimeMatches";
 
 export type MessageType = OmitPartialGroupDMChannel<Message | PartialMessage>;
 

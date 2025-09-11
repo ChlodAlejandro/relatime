@@ -1,10 +1,10 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
-import { DB_TABLES, getDb } from "../../database";
-import { errorEmbed } from "../../embeds/errorEmbed.ts";
-import { successEmbed } from "../../embeds/successEmbed.ts";
-import isOperator from "../../util/isOperator.ts";
-import { version } from "../../version.ts";
-import { ICommand } from "../types.ts";
+import { getDb } from "../../database";
+import { errorEmbed } from "../../embeds/errorEmbed";
+import { successEmbed } from "../../embeds/successEmbed";
+import isOperator from "../../util/isOperator";
+import { version } from "../../version";
+import { ICommand } from "../types";
 
 export const databaseupgrade = <ICommand>{
     type: "debug",
