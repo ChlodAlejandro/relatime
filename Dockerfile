@@ -5,7 +5,8 @@ ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json package-lock.json ./
 
-RUN npm install --verbose --production
+RUN npm install --verbose --production \
+    && npm cache clean --force
 
 COPY . .
 
