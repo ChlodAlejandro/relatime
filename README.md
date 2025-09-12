@@ -1,3 +1,4 @@
+![relatime banner](https://raw.githubusercontent.com/chlodalejandro/relatime/master/assets/banner@0.5x.png)
 # relatime
 Converts relative time in chat to Discord timestamps based on the user's timezone.
 
@@ -8,9 +9,6 @@ Converts relative time in chat to Discord timestamps based on the user's timezon
 - Converts absolute time expressions (e.g., "9pm", "tomorrow at 3 pm")
 - Supports **English only**
 - Supports per-user timezones
-
-## To-do
-- [ ] Support for more specific dates (e.g., "August 12 at 3 a.m.") 
 
 ## Usage
 
