@@ -140,6 +140,18 @@ describe("TimeParser", () => {
                 const daysUntilMonday = now.dayOfWeek === 1 ? 0 : (1 + 7 - now.dayOfWeek) % 7;
                 return now.add({ days: daysUntilMonday }).startOfDay().add({ hours: 17 });
             },
+        "5 pm Monday":
+            (now) => {
+                const daysUntilMonday = now.dayOfWeek === 1 ? 0 : (1 + 7 - now.dayOfWeek) % 7;
+                return now.add({ days: daysUntilMonday }).startOfDay().add({ hours: 17 });
+            },
+        "5 pm next Monday":
+            (now) => {
+                const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
+                return now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday }).startOfDay().add({ hours: 17 });
+            },
+        "by 4 p.m. tomorrow":
+            (now) => now.add({ days: 1 }).startOfDay().add({ hours: 16 }),
         "2 a.m.":
             (now) => now.startOfDay().add({ hours: 2 }),
         "11 p.m.":
@@ -152,6 +164,14 @@ describe("TimeParser", () => {
             (now) => now.startOfDay(),
         "12pm":
             (now) => now.startOfDay().add({ hours: 12 }),
+        "12p.m. yesterday":
+            (now) => now.subtract({ days: 1 }).startOfDay().add({ hours: 12 }),
+        "12p.m. tomorrow":
+            (now) => now.add({ days: 1 }).startOfDay().add({ hours: 12 }),
+        "14:00 today":
+            (now) => now.startOfDay().add({ hours: 14 }),
+        "9:30 of tomorrow":
+            (now) => now.add({ days: 1 }).startOfDay().add({ hours: 9, minutes: 30 }),
         // Relative time
         "in 4 hours":
             (now) => now.add({ hours: 4 }),
@@ -487,7 +507,7 @@ describe("TimeParser", () => {
         expect(results[0].date.timeZoneId).toBe("+23:59");
     });
 
-    it("match in 15, invites in 10", () => {
+    it("should handle \"match in 15, invites in 10\"", () => {
         const parser = new TimeParser("match in 15, invites in 10", timezone);
         const results = parser.parse();
         expect(results).toHaveLength(2);
@@ -499,20 +519,22 @@ describe("TimeParser", () => {
             .toBe(now.add({ minutes: 10 }).toInstant().toString(stringifyOptions));
     });
 
-    it("edge: missing unit", () => {
-        const matches = new TimeParser("in 2", timezone).parse();
-        expect(matches).toHaveLength(0);
+    describe("edge", () => {
+        it("missing unit", () => {
+            const matches = new TimeParser("in 2", timezone).parse();
+            expect(matches).toHaveLength(0);
 
-        const matches2 = new TimeParser("just a", timezone).parse();
-        expect(matches2).toHaveLength(0);
-    });
+            const matches2 = new TimeParser("just a", timezone).parse();
+            expect(matches2).toHaveLength(0);
+        });
 
-    it("edge: double units", () => {
-        const matches = new TimeParser("in 2 hours minutes", timezone).parse();
-        expect(matches).toHaveLength(1);
-        expect(matches[0].match).toBe("in 2 hours");
-        expect(matches[0].date.toInstant().toString(stringifyOptions))
-            .toBe(now.add({ hours: 2 }).toInstant().toString(stringifyOptions));
+        it("double units", () => {
+            const matches = new TimeParser("in 2 hours minutes", timezone).parse();
+            expect(matches).toHaveLength(1);
+            expect(matches[0].match).toBe("in 2 hours");
+            expect(matches[0].date.toInstant().toString(stringifyOptions))
+                .toBe(now.add({ hours: 2 }).toInstant().toString(stringifyOptions));
+        });
     });
 
 });

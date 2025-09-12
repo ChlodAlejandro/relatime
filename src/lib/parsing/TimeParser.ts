@@ -54,7 +54,7 @@ export default class TimeParser extends Parser {
     // Matching here is somewhat strict to avoid accidentally matching ratios (e.g. "1:1", "100:1").
     // Also discards the result if there's an extra number at any point after any unit (e.g. "1:100pm").
     private static readonly TIME_REGEX = /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?(?!\d)/;
-    private static readonly MERIDIAN_REGEX = /^(a\.?m\.?|p\.?m\.?)/i;
+    private static readonly MERIDIAN_REGEX = /^(a\.?(?:m\.?)?|p\.?(?:m\.?)?)/i;
     private static readonly MONTH_REGEXES = {
         1: /^jan?(uary)?$/i,
         2: /^fe?b?(r?uary)?$/i,
@@ -120,12 +120,12 @@ export default class TimeParser extends Parser {
     private static readonly AFTER_REGEX = /^(after|following)$/i;
 
     protected static readonly PREFIX_DURATION_REGEX =
-        /^(?:in|after|within|give|gimme|just)$/i;
+        /^(?:in|after|within|give|gimme|just|maybe|or|for)$/i;
     protected static readonly PREFIX_SKIP_WORDS = {
         give: ["me", "us"],
     };
     protected static readonly POSTFIX_DURATION_REGEX =
-        /^(?:ago|prior|from)$/i;
+        /^(?:ago|prior|from|left|remaining)$/i;
     protected static readonly POSTFIX_MATCH_WORDS = {
         from: ["now"],
     };
@@ -664,6 +664,7 @@ export default class TimeParser extends Parser {
      * Get a weekday and return its number (starting with 0 = Sunday).
      */
     public consumeWeekday(): null | number {
+        const currentIndex = this.index;
         const word = this.consumeWord();
         if (!word) {
             return null;
@@ -671,6 +672,7 @@ export default class TimeParser extends Parser {
 
         // Check if this is a weekday.
         if (!TimeParser.WEEKDAY_REGEX.test(word)) {
+            this.seek(currentIndex);
             return null;
         }
         // Determine which weekday it is.
@@ -679,6 +681,7 @@ export default class TimeParser extends Parser {
                 return +dayNum;
             }
         }
+        this.seek(currentIndex);
         return null;
     }
 
@@ -772,6 +775,54 @@ export default class TimeParser extends Parser {
         return true;
     }
 
+    private consumeTimeOfDayBase() {
+        const postfixIndex = this.index;
+        const now = this.now().startOfDay();
+
+        // Discard prepositions
+        this.consumeRegex(/^(on|at|in(side)?|of|within)\b/i);
+        this.consumeWhitespace();
+
+        let base;
+        // Find out if this is "tomorrow"
+        if (this.peekWord() === "tomorrow") {
+            this.consumeWord();
+            base = now.add({ days: 1 });
+        } else if (this.peekWord() === "yesterday") {
+            this.consumeWord();
+            base = now.subtract({ days: 1 });
+        } else if (this.peekWord() === "today") {
+            this.consumeWord();
+        } else {
+            // Find out if this is a weekday or a relative weekday.
+            const weekday = this.consumeWeekday();
+            if (weekday) {
+                // Weekday found. Get the next occurrence of that weekday.
+                // If it's the current weekday, we're returning next week's occurrence.
+                const daysToAdd = (weekday + 7 - now.dayOfWeek) % 7 || 7;
+                base = now.add({ days: daysToAdd });
+            } else {
+                // This might be a relative weekday. Check for relative words.
+                const possibleRelativeWord = this.consumeWord();
+                if (!possibleRelativeWord) {
+                    this.seek(postfixIndex);
+                } else {
+                    const weekday = this.consumeWeekday();
+                    const relativeWeekday = this.getDateFromRelativeWeekday(weekday, possibleRelativeWord);
+                    if (!relativeWeekday) {
+                        this.seek(postfixIndex);
+                    }
+                    base = relativeWeekday;
+                }
+            }
+        }
+        // Fallback to now.
+        if (base == null) {
+            base = now;
+        }
+        return base;
+    }
+
     protected detectPrepositionTimeOfDay(
         matches: AbsoluteTimeMatch[],
         word: string,
@@ -786,11 +837,10 @@ export default class TimeParser extends Parser {
             return false;
         }
 
-        const today = this.now()
-            .startOfDay();
+        const base = this.consumeTimeOfDayBase();
         matches.push({
             match: this.source.substring(startIndex, this.index).trim(),
-            date: today.add(timeOfDay),
+            date: base.add(timeOfDay),
             precision: timeOfDay?.seconds != null ? "second" : "minute",
         });
         return true;
@@ -810,11 +860,11 @@ export default class TimeParser extends Parser {
             return false;
         }
 
-        const today = this.now()
-            .startOfDay();
+        const base = this.consumeTimeOfDayBase();
+
         matches.push({
             match: this.source.substring(startIndex, this.index).trim(),
-            date: today.add(timeOfDay),
+            date: base.add(timeOfDay),
             precision: timeOfDay?.seconds != null ? "second" : "minute",
         });
         return true;
