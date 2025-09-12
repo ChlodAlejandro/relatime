@@ -58,7 +58,12 @@ export default function getTimeMatches(
 
         const notes = [];
         if (match.approximated) notes.push("approximated");
-        if (!match.relative) notes.push(`<t:${epoch}:R>`);
+        if (!match.relative) {
+            notes.push(
+                match.precision === "day" ?
+                    `<t:${epoch}:R> until midnight` : `<t:${epoch}:R>`,
+            );
+        }
 
         if (!match.relative && options.includeExactRelative) {
             const now = Temporal.Now.zonedDateTimeISO();
