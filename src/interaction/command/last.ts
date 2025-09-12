@@ -1,4 +1,11 @@
-import { Collection, DiscordAPIError, Message, MessageFlags, SlashCommandBuilder } from "discord.js";
+import {
+    Collection,
+    DiscordAPIError,
+    InteractionContextType,
+    Message,
+    MessageFlags,
+    SlashCommandBuilder,
+} from "discord.js";
 import { getUserConfig } from "../../database/config";
 import { errorEmbed } from "../../embeds/errorEmbed";
 import getTimeMatches from "../../util/getTimeMatches";
@@ -9,6 +16,11 @@ export const last = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("last")
+        .setContexts(
+            InteractionContextType.Guild,
+            InteractionContextType.BotDM,
+            InteractionContextType.PrivateChannel,
+        )
         .setDescription("Processes the last message and converts relative or absolute time to timestamps.")
         .addBooleanOption((option) =>
             option

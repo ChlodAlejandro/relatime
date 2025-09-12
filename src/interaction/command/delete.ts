@@ -1,6 +1,6 @@
 import {
     ApplicationCommandType,
-    ContextMenuCommandBuilder,
+    ContextMenuCommandBuilder, InteractionContextType,
     Message,
     MessageFlags,
     OmitPartialGroupDMChannel,
@@ -14,6 +14,11 @@ export const deleteReply = <ICommand>{
     name: "Delete reply",
     builder: new ContextMenuCommandBuilder()
         .setName("Delete reply")
+        .setContexts(
+            InteractionContextType.Guild,
+            InteractionContextType.BotDM,
+            InteractionContextType.PrivateChannel,
+        )
         .setType(ApplicationCommandType.Message),
     async execute(interaction) {
         if (!interaction.isMessageContextMenuCommand()) return;

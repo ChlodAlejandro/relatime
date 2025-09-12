@@ -1,4 +1,4 @@
-import { MessageFlags, SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, MessageFlags, SlashCommandBuilder } from "discord.js";
 import { getDb } from "../../database";
 import { errorEmbed } from "../../embeds/errorEmbed";
 import { successEmbed } from "../../embeds/successEmbed";
@@ -10,6 +10,11 @@ export const databaseupgrade = <ICommand>{
     type: "debug",
     builder: new SlashCommandBuilder()
         .setName("databaseupgrade")
+        .setContexts(
+            InteractionContextType.Guild,
+            InteractionContextType.BotDM,
+            InteractionContextType.PrivateChannel,
+        )
         .setDescription("Upgrade the database.")
         .addStringOption((option) =>
             option

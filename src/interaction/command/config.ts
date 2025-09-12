@@ -1,4 +1,4 @@
-import { Interaction, SlashCommandBuilder } from "discord.js";
+import { Interaction, InteractionContextType, SlashCommandBuilder } from "discord.js";
 import { ICommand } from "../types";
 import { absolute } from "./config/absolute";
 import { relative } from "./config/relative";
@@ -8,6 +8,11 @@ export const config = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("config")
+        .setContexts(
+            InteractionContextType.Guild,
+            InteractionContextType.BotDM,
+            InteractionContextType.PrivateChannel,
+        )
         .setDescription("Set your configuration options")
         .addSubcommand(timezone.builder)
         .addSubcommand(relative.builder)

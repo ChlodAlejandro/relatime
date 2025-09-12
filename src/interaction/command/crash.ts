@@ -1,10 +1,15 @@
-import { SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, SlashCommandBuilder } from "discord.js";
 import { ICommand } from "../types";
 
 export const crash = <ICommand>{
     type: "debug",
     builder: new SlashCommandBuilder()
         .setName("crash")
+        .setContexts(
+            InteractionContextType.Guild,
+            InteractionContextType.BotDM,
+            InteractionContextType.PrivateChannel,
+        )
         .setDescription("I wonder what this command does..."),
     async execute() {
         throw new Error("Intentional crash triggered by /crash command");
