@@ -178,48 +178,44 @@ export default class TimeParser extends Parser {
 
             // This must be ordered from most-specific to least-specific, or else we'll match
             // too small that the patterns we want.
-            if (modes.includes(TimeParserMode.Absolute)) {
-                if (this.detectFirstAndLastDays(matches, word, startIndex))
-                    continue;
-                if (this.detectNthWeekdayOfMonth(matches, word, startIndex))
-                    continue;
-                if (this.detectLastWeekdayOfMonth(matches, word, startIndex))
-                    continue;
-                if (this.detectWeekdayAndAbsoluteTime(matches, word, startIndex))
-                    continue;
-                if (this.detectWeekdayAndRelativeTime(matches, word, startIndex))
-                    continue;
-                if (this.detectOrdinalUnit(matches, word, startIndex))
-                    continue;
-                if (this.detectBackAndFrontOfHour(matches, word, startIndex))
-                    continue;
-                if (this.detectYesterday(matches, word, startIndex))
-                    continue;
-                if (this.detectToday(matches, word, startIndex))
-                    continue;
-                if (this.detectTomorrow(matches, word, startIndex))
-                    continue;
-                if (this.detectMidnight(matches, word, startIndex))
-                    continue;
-                if (this.detectPrepositionTimeOfDay(matches, word, startIndex))
-                    continue;
-                if (this.detectTimeOfDay(matches, word, startIndex))
-                    continue;
-            }
-            if (modes.includes(TimeParserMode.Relative)) {
-                if (this.detectRelativeWeekdayAndAbsoluteTime(matches, word, startIndex))
-                    continue;
-                if (this.detectRelativeWeekday(matches, word, startIndex))
-                    continue;
-                if (this.detectRelativeUnit(matches, word, startIndex))
-                    continue;
-                if (this.detectPrefixDuration(matches, word, startIndex))
-                    continue;
-                if (this.detectPostfixDuration(matches, word, startIndex))
-                    continue;
-                if (this.detectOsuDurations(matches, word, startIndex))
-                    continue;
-            }
+            if (this.detectFirstAndLastDays(matches, word, startIndex))
+                continue;
+            if (this.detectNthWeekdayOfMonth(matches, word, startIndex))
+                continue;
+            if (this.detectLastWeekdayOfMonth(matches, word, startIndex))
+                continue;
+            if (this.detectWeekdayAndAbsoluteTime(matches, word, startIndex))
+                continue;
+            if (this.detectWeekdayAndRelativeTime(matches, word, startIndex))
+                continue;
+            if (this.detectOrdinalUnit(matches, word, startIndex))
+                continue;
+            if (this.detectBackAndFrontOfHour(matches, word, startIndex))
+                continue;
+            if (this.detectYesterday(matches, word, startIndex))
+                continue;
+            if (this.detectToday(matches, word, startIndex))
+                continue;
+            if (this.detectTomorrow(matches, word, startIndex))
+                continue;
+            if (this.detectMidnight(matches, word, startIndex))
+                continue;
+            if (this.detectPrepositionTimeOfDay(matches, word, startIndex))
+                continue;
+            if (this.detectTimeOfDay(matches, word, startIndex))
+                continue;
+            if (this.detectRelativeWeekdayAndAbsoluteTime(matches, word, startIndex))
+                continue;
+            if (this.detectRelativeWeekday(matches, word, startIndex))
+                continue;
+            if (this.detectRelativeUnit(matches, word, startIndex))
+                continue;
+            if (this.detectPrefixDuration(matches, word, startIndex))
+                continue;
+            if (this.detectPostfixDuration(matches, word, startIndex))
+                continue;
+            if (this.detectOsuDurations(matches, word, startIndex))
+                continue;
 
             if (lastIndex === this.index) {
                 if (process.env.NODE_ENV !== "production") {
@@ -238,7 +234,9 @@ export default class TimeParser extends Parser {
         } while (!this.isEmpty());
 
         return matches
-            .filter(v => !!v);
+            .filter(v => !!v)
+            .filter((v) => modes.includes(TimeParserMode.Relative) || !v.relative)
+            .filter((v) => modes.includes(TimeParserMode.Absolute) || !!v.relative);
     }
 
     /**
