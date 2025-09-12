@@ -2,7 +2,7 @@ import { Snowflake } from "discord.js";
 import getKeyv from "../util/getKeyv";
 import { getDb } from "./index";
 
-export async function getMessageBotReply(id: string): Promise<null | Snowflake> {
+export async function getMessageBotReply(id: Snowflake): Promise<null | Snowflake> {
     const keyv = getKeyv();
 
     const cacheKey = `tracked_message:${id}`;

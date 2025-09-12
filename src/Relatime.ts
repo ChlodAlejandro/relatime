@@ -8,6 +8,8 @@ import { Logger } from "winston";
 import { dbExists, getDb, setupDb } from "./database";
 import onInteractionCreate from "./handlers/onInteractionCreate";
 import onMessageCreate from "./handlers/onMessageCreate";
+import onMessageDelete from "./handlers/onMessageDelete";
+import onMessageBulkDelete from "./handlers/onMessageBulkDelete";
 import onMessageUpdate from "./handlers/onMessageUpdate";
 import { loadCommands } from "./interaction/loader";
 import RelatimeClient from "./RelatimeClient";
@@ -171,6 +173,8 @@ class Relatime {
         this.client.on(Events.InteractionCreate, onInteractionCreate);
         this.client.on(Events.MessageCreate, onMessageCreate);
         this.client.on(Events.MessageUpdate, onMessageUpdate);
+        this.client.on(Events.MessageDelete, onMessageDelete);
+        this.client.on(Events.MessageBulkDelete, onMessageBulkDelete);
         this.client.once(Events.ClientReady, (readyClient: Client) => {
             this.log.info(`Ready! Logged in as ${readyClient.user.tag}`);
 
