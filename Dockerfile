@@ -1,9 +1,8 @@
 FROM node:24-alpine AS build
 
 WORKDIR /app
-COPY package.json package-lock.json ./
-
-COPY . .
+COPY package.json package-lock.json tsconfig.json LICENSE ./
+COPY ./src/ src/
 
 RUN npm install --verbose
 RUN npx tsc
@@ -20,7 +19,6 @@ RUN npm install --verbose --production \
     && rm -rf /root/.npm \
     && rm -rf /tmp/*
 
-COPY . .
 COPY --from=build /app/build build/
 
 CMD ["npm", "run", "start"]
