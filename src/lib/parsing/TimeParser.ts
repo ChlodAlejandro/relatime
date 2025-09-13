@@ -1519,12 +1519,16 @@ export default class TimeParser extends Parser {
             return false;
         }
         const date = this.getDateFromRelativeWeekday(weekday, "this");
+        const precision = timeOfDay ?
+            (timeOfDay?.seconds != null ? "second" :
+                (timeOfDay?.minutes != null ? "minute" : "hour")) :
+            "day";
         this.addMatch(
             matches,
             startIndex,
             {
                 date: date.add(timeOfDay),
-                precision: "day",
+                precision,
             },
         );
         return true;
