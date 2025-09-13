@@ -1,10 +1,13 @@
-import { InteractionContextType, SlashCommandBuilder } from "discord.js";
+import { ApplicationIntegrationType, InteractionContextType, SlashCommandBuilder } from "discord.js";
 import { ICommand } from "../types";
 
 export const crash = <ICommand>{
     type: "debug",
     builder: new SlashCommandBuilder()
         .setName("crash")
+        .setIntegrationTypes(
+            ApplicationIntegrationType.GuildInstall,
+        )
         .setContexts(
             InteractionContextType.Guild,
             InteractionContextType.BotDM,

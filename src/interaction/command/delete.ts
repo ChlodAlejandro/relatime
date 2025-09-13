@@ -1,5 +1,5 @@
 import {
-    ApplicationCommandType,
+    ApplicationCommandType, ApplicationIntegrationType,
     ContextMenuCommandBuilder, InteractionContextType,
     Message,
     MessageFlags,
@@ -14,6 +14,10 @@ export const deleteReply = <ICommand>{
     name: "Delete reply",
     builder: new ContextMenuCommandBuilder()
         .setName("Delete reply")
+        .setIntegrationTypes(
+            ApplicationIntegrationType.UserInstall,
+            ApplicationIntegrationType.GuildInstall,
+        )
         .setContexts(
             InteractionContextType.Guild,
             InteractionContextType.BotDM,

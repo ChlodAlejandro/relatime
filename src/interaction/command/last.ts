@@ -1,4 +1,5 @@
 import {
+    ApplicationIntegrationType,
     Collection,
     DiscordAPIError,
     InteractionContextType,
@@ -16,6 +17,10 @@ export const last = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("last")
+        .setIntegrationTypes(
+            ApplicationIntegrationType.UserInstall,
+            ApplicationIntegrationType.GuildInstall,
+        )
         .setContexts(
             InteractionContextType.Guild,
             InteractionContextType.BotDM,

@@ -1,4 +1,4 @@
-import { InteractionContextType, MessageFlags, SlashCommandBuilder } from "discord.js";
+import { ApplicationIntegrationType, InteractionContextType, MessageFlags, SlashCommandBuilder } from "discord.js";
 import { getUserConfig } from "../../database/config";
 import { errorEmbed } from "../../embeds/errorEmbed";
 import { successEmbed } from "../../embeds/successEmbed";
@@ -9,6 +9,10 @@ export const parse = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("parse")
+        .setIntegrationTypes(
+            ApplicationIntegrationType.UserInstall,
+            ApplicationIntegrationType.GuildInstall,
+        )
         .setContexts(
             InteractionContextType.Guild,
             InteractionContextType.BotDM,

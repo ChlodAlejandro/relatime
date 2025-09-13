@@ -1,4 +1,5 @@
-import { ApplicationCommandType, ContextMenuCommandBuilder, InteractionContextType, MessageFlags } from "discord.js";
+import { ApplicationCommandType,
+    ApplicationIntegrationType, ContextMenuCommandBuilder, InteractionContextType, MessageFlags } from "discord.js";
 import { getUserConfig } from "../../database/config";
 import { errorEmbed } from "../../embeds/errorEmbed";
 import getTimeMatches from "../../util/getTimeMatches";
@@ -10,6 +11,10 @@ export const parseTimes = <ICommand>{
     name: "Parse times",
     builder: new ContextMenuCommandBuilder()
         .setName("Parse times")
+        .setIntegrationTypes(
+            ApplicationIntegrationType.UserInstall,
+            ApplicationIntegrationType.GuildInstall,
+        )
         .setContexts(
             InteractionContextType.Guild,
             InteractionContextType.BotDM,

@@ -1,4 +1,4 @@
-import { Interaction, InteractionContextType, SlashCommandBuilder } from "discord.js";
+import { ApplicationIntegrationType, Interaction, InteractionContextType, SlashCommandBuilder } from "discord.js";
 import { ICommand } from "../types";
 import { absolute } from "./config/absolute";
 import { relative } from "./config/relative";
@@ -8,6 +8,10 @@ export const config = <ICommand>{
     type: "global",
     builder: new SlashCommandBuilder()
         .setName("config")
+        .setIntegrationTypes(
+            ApplicationIntegrationType.UserInstall,
+            ApplicationIntegrationType.GuildInstall,
+        )
         .setContexts(
             InteractionContextType.Guild,
             InteractionContextType.BotDM,
