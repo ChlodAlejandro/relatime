@@ -154,7 +154,7 @@ class Relatime {
         for (const guildId of getOperatorGuilds()) {
             await this.rest.put(
                 Routes.applicationGuildCommands(process.env.RT_DISCORD_CLIENT_ID!, guildId),
-                { body: [...commands.values().map(command => command.builder.toJSON())] },
+                { body: [...debugCommands.values().map(command => command.builder.toJSON())] },
             ).then((result) => {
                 this.log.info(`Registered debug commands for ${guildId}.`, { result });
             });
