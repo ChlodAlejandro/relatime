@@ -210,6 +210,8 @@ export default class TimeParser extends Parser {
                 continue;
             if (this.detectTimeOfDay(matches, word, startIndex))
                 continue;
+            if (this.detectTimeOfDayUTC(matches, word, startIndex))
+                continue;
             if (this.detectRelativeWeekdayAndAbsoluteTime(matches, word, startIndex))
                 continue;
             if (this.detectRelativeWeekday(matches, word, startIndex))
@@ -352,11 +354,13 @@ export default class TimeParser extends Parser {
      * no time was found, null is returned. This advances the parser's index.
      *
      * @protected
+     * @param allowHourOnly Whether to allow hour numbers only when no meridian is provided. Otherwise,
+     *  minutes will be required.
      */
-    public consumeTimeOfDay(): null | { days?: number, hours: number, minutes: number, seconds?: number } {
+    public consumeTimeOfDay(allowHourOnly = false): null | { days?: number, hours: number, minutes: number, seconds?: number } {
         const startIndex = this.index;
 
-        const exact = this.consumeExactTimeOfDay();
+        const exact = this.consumeExactTimeOfDay(allowHourOnly);
         if (exact) {
             return exact;
         } else {
@@ -376,8 +380,10 @@ export default class TimeParser extends Parser {
     /**
      * This does NOT reset the parser's index on failure. Use {@link consumeTimeOfDay} instead.
      * @protected
+     * @param allowHourOnly Whether to allow hour numbers only when no meridian is provided. Otherwise,
+     *  minutes will be required.
      */
-    protected consumeExactTimeOfDay(): null | { days: number, hours: number, minutes: number, seconds: number } {
+    protected consumeExactTimeOfDay(allowHourOnly = false): null | { days: number, hours: number, minutes: number, seconds: number } {
         const textMatch = this.consumeRegex(TimeParser.TIME_REGEX);
         if (!textMatch) {
             return null;
@@ -402,7 +408,7 @@ export default class TimeParser extends Parser {
                 hours = 0;
             }
             this.consumeWhitespace();
-        } else {
+        } else if (!allowHourOnly) {
             // No meridian detected. In this case, minutes is required.
             // Otherwise, we may match single numbers, like "1".
             if (match[2] == null) {
@@ -899,6 +905,41 @@ export default class TimeParser extends Parser {
         }
 
         const base = this.consumeTimeOfDayBase();
+
+        this.addMatch(
+            matches,
+            startIndex,
+            {
+                date: base.add(timeOfDay),
+                precision: timeOfDay?.seconds != null ? "second" : "minute",
+            },
+        );
+        return true;
+    }
+
+    protected detectTimeOfDayUTC(
+        matches: TimeMatch[],
+        _word: string,
+        startIndex: number,
+    ): boolean {
+        const currentIndex = this.index;
+        // Move us back so we can consume this time of day.
+        this.seek(startIndex);
+        const timeOfDay = this.consumeTimeOfDay(true);
+        if (!timeOfDay) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        const utcPostfix = this.consumeWord();
+        if (!/utc|uct/i.test(utcPostfix)) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        const base = this.consumeTimeOfDayBase()
+            .toPlainDateTime()
+            .toZonedDateTime("Etc/UTC");
 
         this.addMatch(
             matches,

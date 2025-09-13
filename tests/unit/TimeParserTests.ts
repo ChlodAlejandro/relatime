@@ -275,6 +275,25 @@ describe("TimeParser", () => {
             .toBe(expectedDate.toInstant().toString(stringifyOptions));
     });
 
+    test("should parse '14 UTC' correctly", () => {
+        const parser = new TimeParser("14 UTC", timezone);
+        const results = parser.parse();
+
+        expect(results).toHaveLength(1);
+        expect(results[0].match.endsWith("UTC")).toBe(true);
+
+        const expectedDate = now
+            .toPlainDateTime()
+            .toZonedDateTime("Etc/UTC")
+            .startOfDay()
+            .add({ hours: 14 });
+        const actualDate = results[0].date;
+
+        expect(actualDate.timeZoneId).toBe("Etc/UTC");
+        expect(actualDate.toInstant().toString(stringifyOptions))
+            .toBe(expectedDate.toInstant().toString(stringifyOptions));
+    });
+
     test("concatenated test (simples)", () => {
         const concatenated = Object.keys(simpleTests).join(", ");
         const matches = new TimeParser(concatenated, timezone).parse();
