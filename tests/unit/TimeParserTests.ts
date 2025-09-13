@@ -3,7 +3,7 @@ import TimeParser from "../../src/lib/parsing/TimeParser";
 
 describe("TimeParser", () => {
 
-    const simpleTests: Record<string, (now: Temporal.ZonedDateTime) => Temporal.ZonedDateTime> = {
+    const simpleAbsoluteTests: Record<string, (now: Temporal.ZonedDateTime) => Temporal.ZonedDateTime> = {
         // Absolute time
         "yesterday":
             (now) => now.subtract({ days: 1 }).startOfDay(),
@@ -29,14 +29,6 @@ describe("TimeParser", () => {
             (now) => now.startOfDay().add({ hours: 15 }),
         "evening":
             (now) => now.startOfDay().add({ hours: 18 }),
-        "back of 7am":
-            (now) => now.startOfDay().add({ hours: 7, minutes: 15 }),
-        "back of 15":
-            (now) => now.startOfDay().add({ hours: 15, minutes: 15 }),
-        "front of 5am":
-            (now) => now.startOfDay().add({ hours: 5 }).subtract({ minutes: 15 }),
-        "front of 23":
-            (now) => now.startOfDay().add({ hours: 23 }).subtract({ minutes: 15 }),
         "first day of February 2008":
             () => Temporal.ZonedDateTime.from({ year: 2008, month: 2, day: 1, timeZone: timezone }),
         "first day of 2008":
@@ -101,7 +93,7 @@ describe("TimeParser", () => {
         "fifth day":
             (now) => now.with({ day: 5 }).startOfDay(),
         "4th Monday":
-            // Fourth Monday of the month
+        // Fourth Monday of the month
             (now) => {
                 const firstOfMonth = now.with({ day: 1 });
                 const daysToMonday = (1 + 7 - firstOfMonth.dayOfWeek) % 7;
@@ -109,10 +101,6 @@ describe("TimeParser", () => {
             },
         "second month":
             (now) => now.with({ month: 2, day: 1 }).startOfDay(),
-        "last day":
-            (now) => now.subtract({ days: 1 }),
-        "previous year":
-            (now) => now.subtract({ years: 1 }),
         "Monday":
             (now) => {
                 const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
@@ -176,7 +164,21 @@ describe("TimeParser", () => {
             (now) => now.startOfDay().add({ hours: 14 }),
         "9:30 of tomorrow":
             (now) => now.add({ days: 1 }).startOfDay().add({ hours: 9, minutes: 30 }),
+    };
+    const simpleRelativeTests: Record<string, (now: Temporal.ZonedDateTime) => Temporal.ZonedDateTime> = {
         // Relative time
+        "last day":
+            (now) => now.subtract({ days: 1 }),
+        "previous year":
+            (now) => now.subtract({ years: 1 }),
+        "back of 7am":
+            (now) => now.startOfDay().add({ hours: 7, minutes: 15 }),
+        "back of 15":
+            (now) => now.startOfDay().add({ hours: 15, minutes: 15 }),
+        "front of 5am":
+            (now) => now.startOfDay().add({ hours: 5 }).subtract({ minutes: 15 }),
+        "front of 23":
+            (now) => now.startOfDay().add({ hours: 23 }).subtract({ minutes: 15 }),
         "in 4 hours":
             (now) => now.add({ hours: 4 }),
         "after 1 week":
@@ -231,6 +233,9 @@ describe("TimeParser", () => {
         "just 1 asdkjashfakjsfhadfsklasjdkljasdlkj hour":
             (now) => now.add({ hours: 1 }),
     };
+    const simpleTests = Object.assign(
+        {}, simpleAbsoluteTests, simpleRelativeTests,
+    );
 
     const timezone = "America/New_York";
     const stringifyOptions = <const>{ timeZone: "UTC", smallestUnit: "second" };
@@ -249,6 +254,23 @@ describe("TimeParser", () => {
         const expectedDate = simpleTests[input](now);
         const actualDate = results[0].date;
 
+        expect(actualDate.toInstant().toString(stringifyOptions))
+            .toBe(expectedDate.toInstant().toString(stringifyOptions));
+    });
+
+    test.each(Object.keys(simpleAbsoluteTests))("should parse '%s UTC' correctly", (input) => {
+        const parser = new TimeParser(input + " UTC", timezone);
+        const results = parser.parse();
+
+        expect(results).toHaveLength(1);
+        expect(results[0].match.endsWith("UTC")).toBe(true);
+
+        const expectedDate = simpleTests[input](now)
+            .toPlainDateTime()
+            .toZonedDateTime("Etc/UTC");
+        const actualDate = results[0].date;
+
+        expect(actualDate.timeZoneId).toBe("Etc/UTC");
         expect(actualDate.toInstant().toString(stringifyOptions))
             .toBe(expectedDate.toInstant().toString(stringifyOptions));
     });
