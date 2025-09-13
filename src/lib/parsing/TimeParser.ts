@@ -1270,10 +1270,14 @@ export default class TimeParser extends Parser {
             this.seek(currentIndex);
             return false;
         }
+        const precision = timeOfDay ?
+            (timeOfDay?.seconds != null ? "second" :
+                (timeOfDay?.minutes != null ? "minute" : "hour")) :
+            "day";
         matches.push({
             match: this.source.substring(startIndex, this.index).trim(),
             date: date.add(timeOfDay),
-            precision: "day",
+            precision,
         });
         return true;
     }
