@@ -54,7 +54,7 @@ export default class TimeParser extends Parser {
     // Matching here is somewhat strict to avoid accidentally matching ratios (e.g. "1:1", "100:1").
     // Also discards the result if there's an extra number at any point after any unit (e.g. "1:100pm").
     private static readonly TIME_REGEX = /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?(?!\d)/;
-    private static readonly MERIDIAN_REGEX = /^(a\.?(?:m\.?)?|p\.?(?:m\.?)?)/i;
+    private static readonly MERIDIAN_REGEX = /^([ap](?:\.?m\.?|\b))/i;
     private static readonly MONTH_REGEXES = {
         1: /^jan?(uary)?$/i,
         2: /^fe?b?(r?uary)?$/i,
@@ -228,7 +228,12 @@ export default class TimeParser extends Parser {
                     });
                 }
                 // No progress made, consume a character to avoid infinite loops.
-                this.consume();
+                // Is this a number? Consume as much as possible.
+                if (this.peekRegex(/^\d+/)) {
+                    this.consumeRegex(/^\d+/);
+                } else {
+                    this.consume();
+                }
             }
             lastIndex = this.index;
         } while (!this.isEmpty());

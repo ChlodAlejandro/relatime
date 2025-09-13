@@ -162,6 +162,10 @@ describe("TimeParser", () => {
             (now) => now.startOfDay().add({ hours: 21 }),
         "12am":
             (now) => now.startOfDay(),
+        "9a":
+            (now) => now.startOfDay().add({ hours: 9 }),
+        "10p":
+            (now) => now.startOfDay().add({ hours: 22 }),
         "12pm":
             (now) => now.startOfDay().add({ hours: 12 }),
         "12p.m. yesterday":
@@ -517,6 +521,14 @@ describe("TimeParser", () => {
         expect(results[1].match).toBe("invites in 10");
         expect(results[1].date.toInstant().toString(stringifyOptions))
             .toBe(now.add({ minutes: 10 }).toInstant().toString(stringifyOptions));
+    });
+
+    describe("false positives", () => {
+        it("should not parse '200 pp'", () => {
+            const parser = new TimeParser("200 pp", timezone);
+            const results = parser.parse();
+            expect(results).toHaveLength(0);
+        });
     });
 
     describe("edge", () => {
