@@ -20,7 +20,7 @@ export interface TimeMatch {
     precision: Precision;
     /**
      * Whether the user forced this time to be UTC by appending "UTC" to the
-     * time expression. This is not set to true if even if the user's timezone
+     * time expression. This is not set to true even if the user's timezone
      * is "UTC".
      */
     isUTC?: boolean;
@@ -129,6 +129,7 @@ export default class TimeParser extends Parser {
     });
     private static readonly BEFORE_REGEX = /^(before|prior)$/i;
     private static readonly AFTER_REGEX = /^(after|following)$/i;
+    private static readonly ABSOLUTE_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})\b/;
 
     protected static readonly PREFIX_DURATION_REGEX =
         /^(?:in|after|within|give|gimme|just|maybe|or|for)$/i;
@@ -189,6 +190,10 @@ export default class TimeParser extends Parser {
 
             // This must be ordered from most-specific to least-specific, or else we'll match
             // too small that the patterns we want.
+            if (this.detectAbsoluteDateAndAbsoluteTime(matches, word, startIndex))
+                continue;
+            if (this.detectAbsoluteTimeAndAbsoluteDate(matches, word, startIndex))
+                continue;
             if (this.detectFirstAndLastDays(matches, word, startIndex))
                 continue;
             if (this.detectNthWeekdayOfMonth(matches, word, startIndex))
@@ -232,13 +237,7 @@ export default class TimeParser extends Parser {
 
             if (lastIndex === this.index) {
                 if (process.env.NODE_ENV !== "production") {
-                    this._onWarning.dispatch({
-                        message: "Parser did not advance",
-                        source: this.source,
-                        index: this.index,
-                        startIndex,
-                        word,
-                    });
+                    this.warn("Parser did not advance", startIndex, word);
                 }
                 // No progress made, consume a character to avoid infinite loops.
                 // Is this a number? Consume as much as possible.
@@ -255,6 +254,16 @@ export default class TimeParser extends Parser {
             .filter(v => !!v)
             .filter((v) => modes.includes(TimeParserMode.Relative) || !v.relative)
             .filter((v) => modes.includes(TimeParserMode.Absolute) || !!v.relative);
+    }
+
+    private warn(message: string, startIndex: number, word: string) {
+        this._onWarning.dispatch({
+            message: "Parser did not advance",
+            source: this.source,
+            index: this.index,
+            startIndex,
+            word,
+        });
     }
 
     protected addMatch(matches: TimeMatch[], matchIndex: number | [number, number], match: Omit<TimeMatch, "match">) {
@@ -504,6 +513,30 @@ export default class TimeParser extends Parser {
         return null;
     }
 
+    protected consumeMonth(): { word: string, month: number } | null {
+        const monthWord = this.peekWord();
+        if (!monthWord) {
+            // No month found, discard.
+            return null;
+        }
+        if (!TimeParser.MONTH_REGEX.test(monthWord)) {
+            // Not a month, discard.
+            return null;
+        }
+        const month = +(
+            Object.keys(TimeParser.MONTH_REGEXES)
+                .find(m => TimeParser.MONTH_REGEXES[m].test(monthWord))
+        );
+        if (isNaN(month)) {
+            // Not a valid month?!
+            this.warn("Invalid month detected but month RegEx matched.", this.index, monthWord);
+            this.seek(this.index);
+            return null;
+        }
+        this.consumeWord();
+        return { word: monthWord, month };
+    }
+
     /**
      * This does NOT reset the parser's index on failure. Use {@link consumeMonthYear} instead.
      * @protected
@@ -517,17 +550,8 @@ export default class TimeParser extends Parser {
                 // This is a month-year pair, but in the wrong order.
                 // First extract the month.
 
-                const monthWord = this.consumeWord();
-                let month: number;
-                for (const monthNum in TimeParser.MONTH_REGEXES) {
-                    if (TimeParser.MONTH_REGEXES[monthNum].test(monthWord)) {
-                        // Valid month found.
-                        month = +monthNum;
-                        break;
-                    }
-                }
+                const month = this.consumeMonth();
                 if (!month) {
-                    // Not a valid month.
                     return null;
                 }
 
@@ -535,7 +559,7 @@ export default class TimeParser extends Parser {
                     time: Temporal.ZonedDateTime.from({
                         timeZone: this.timeZoneId,
                         year: +nextWord,
-                        month: month,
+                        month: month.month,
                         day: 1,
                     }),
                     precision: "month",
@@ -720,6 +744,246 @@ export default class TimeParser extends Parser {
         }
         this.seek(currentIndex);
         return null;
+    }
+
+    /**
+     * Consumes an absolute date.
+     *
+     * This currently supports:
+     *  - Month D, Year (e.g. August 1, 2025)
+     *  - Month D (e.g. August 1)
+     *  - D Month Year (e.g. 1 August 2025)
+     *  - D Month (e.g. 1 August)
+     *  - Year Month D (e.g. 2025 August 1)
+     *  - YYYY-MM-DD (e.g. 2025-08-01)
+     *
+     * MM/DD/YYYY is ambiguous with DD/MM/YYYY and is currently skipped.
+     *
+     * @private
+     */
+    private consumeAbsoluteDate() {
+        const currentIndex = this.index;
+        // This uses this.now, in case nowProvider for some reason in the future uses either
+        // a different calendar or in case it gets hijacked by a test script.
+        const now = this.now();
+
+        // Check for Month, D pattern.
+        const nextWord = this.peekWord();
+        if (this.peekRegex(TimeParser.ABSOLUTE_DATE_REGEX)) {
+            // This is a YYYY-MM-DD expression.
+            const dateText = this.consumeRegex(TimeParser.ABSOLUTE_DATE_REGEX)!;
+            this.consumeWhitespace();
+            const match = dateText.match(TimeParser.ABSOLUTE_DATE_REGEX)!;
+            const year = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10);
+            const day = parseInt(match[3], 10);
+
+            // Validate the month.
+            const targetYear = now.with({ year });
+            if (month > targetYear.monthsInYear) {
+                // Discard.
+                return null;
+            }
+
+            // Validate the day.
+            const targetMonth = targetYear.with({ month });
+            if (day > targetMonth.daysInMonth) {
+                // Invalid date. Discard.
+                return null;
+            }
+
+            return targetMonth.with({ day }).startOfDay();
+        } else if (/^\d{1,2}$/.test(nextWord)) {
+            // This is a day.
+            const day = parseInt(this.consumeWord()!, 10);
+            // Now check for a month name.
+            const month = this.consumeMonth();
+            if (!month) {
+                // No month. Discard.
+                this.seek(currentIndex);
+                return null;
+            }
+
+            // Now check for an optional year
+            let year: number;
+            // Using peekWord here so that we don't match things like "2024foo".
+            // Since peekWord ignores punctuation, this should still match "2024, foo".
+            if (/^\d{4}$/.test(this.peekWord() || "")) {
+                year = parseInt(this.consumeWord()!, 10);
+            }
+
+            // Validate the day.
+            const targetMonth = now.with({
+                month: month.month,
+                year: year ?? now.year,
+            });
+            if (day > targetMonth.daysInMonth) {
+                // Invalid date. Discard.
+                this.seek(currentIndex);
+                return null;
+            }
+
+            return targetMonth.with({ day }).startOfDay();
+        } else if (/^\d{4}$/.test(nextWord)) {
+            // A year...
+            const year = parseInt(this.consumeWord()!, 10);
+
+            // Now check for a month name.
+            const month = this.consumeMonth();
+            if (!month) {
+                // No month. Discard.
+                this.seek(currentIndex);
+                return null;
+            }
+
+            // Now check for a day.
+            if (!/^\d+$/.test(this.peekWord() || "")) {
+                // No day. Discard.
+                this.seek(currentIndex);
+                return null;
+            }
+            const day = parseInt(this.consumeWord()!, 10);
+
+            // Validate the day.
+            const targetMonth = now.with({
+                month: month.month,
+                year: year ?? now.year,
+            });
+            if (day > targetMonth.daysInMonth) {
+                // Invalid date. Discard.
+                this.seek(currentIndex);
+                return null;
+            }
+
+            return targetMonth.with({ day }).startOfDay();
+        } else {
+            // This might be a month name.
+            const month = this.consumeMonth();
+            if (!month) {
+                // No month. Discard.
+                return null;
+            }
+
+            // Now check for a day.
+            if (!/^\d+$/.test(this.peekWord() || "")) {
+                // No day. Discard.
+                this.seek(currentIndex);
+                return null;
+            }
+            const day = parseInt(this.consumeWord()!, 10);
+
+            const prePunctuation = this.index;
+            // Strip out punctuation. (e.g. "September 23, 2004").
+            this.consumePunctuation();
+            this.consumeWhitespace();
+
+            // Now check for an optional year
+            let year: number;
+            // Using peekWord here so that we don't match things like "2024foo".
+            // Since peekWord ignores punctuation, this should still match "2024, foo".
+            if (/^\d{4}$/.test(this.peekWord() || "")) {
+                year = parseInt(this.consumeWord()!, 10);
+            } else {
+                // No year. Let's avoid consuming the punctuation if we didn't find a year.
+                this.seek(prePunctuation);
+            }
+
+            // Validate the day.
+            const targetMonth = now.with({
+                month: month.month,
+                year: year ?? now.year,
+            });
+            if (day > targetMonth.daysInMonth) {
+                // Invalid date. Discard.
+                this.seek(currentIndex);
+                return null;
+            }
+
+            return targetMonth.with({ day }).startOfDay();
+        }
+    }
+
+    protected detectAbsoluteDateAndAbsoluteTime(
+        matches: TimeMatch[],
+        _word: string,
+        startIndex: number,
+    ): boolean {
+        const currentIndex = this.index;
+
+        // Consume an absolute date
+        this.seek(startIndex);
+        const date = this.consumeAbsoluteDate();
+        if (!date) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        if (/^(on|at|in)$/i.test(this.peekWord())) {
+            // Cut out the preposition.
+            this.consumeWord();
+        }
+
+        const timeOfDay = this.consumeTimeOfDay();
+        if (!timeOfDay) {
+            this.seek(currentIndex);
+            return false;
+        }
+        const precision = timeOfDay ?
+            (timeOfDay?.seconds != null ? "second" :
+                (timeOfDay?.minutes != null ? "minute" : "hour")) :
+            "day";
+
+        this.addMatch(
+            matches,
+            startIndex,
+            {
+                date: date.add(timeOfDay),
+                precision,
+            },
+        );
+        return true;
+    }
+
+    protected detectAbsoluteTimeAndAbsoluteDate(
+        matches: TimeMatch[],
+        _word: string,
+        startIndex: number,
+    ): boolean {
+        const currentIndex = this.index;
+
+        // Consume an absolute time
+        this.seek(startIndex);
+        const timeOfDay = this.consumeTimeOfDay();
+        if (!timeOfDay) {
+            this.seek(currentIndex);
+            return false;
+        }
+        const precision = timeOfDay ?
+            (timeOfDay?.seconds != null ? "second" :
+                (timeOfDay?.minutes != null ? "minute" : "hour")) :
+            "day";
+
+        if (/^(on|at|in)$/i.test(this.peekWord())) {
+            // Cut out the preposition.
+            this.consumeWord();
+        }
+
+        // Consume an absolute date
+        const date = this.consumeAbsoluteDate();
+        if (!date) {
+            this.seek(currentIndex);
+            return false;
+        }
+
+        this.addMatch(
+            matches,
+            startIndex,
+            {
+                date: date.add(timeOfDay),
+                precision,
+            },
+        );
+        return true;
     }
 
     private getKeywordAndTimeDetector(
@@ -1291,6 +1555,7 @@ export default class TimeParser extends Parser {
         );
     }
 
+    // noinspection GrazieInspection
     /**
      * Get a relation string such as "next", "last", "this", etc.
      *

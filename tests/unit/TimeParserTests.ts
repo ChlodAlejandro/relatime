@@ -5,6 +5,18 @@ describe("TimeParser", () => {
 
     const simpleAbsoluteTests: Record<string, (now: Temporal.ZonedDateTime) => Temporal.ZonedDateTime> = {
         // Absolute time
+        "September 23 at 12:00":
+            (now) => now.with({ month: 9, day: 23 }).startOfDay().add({ hours: 12 }),
+        "23 September at 12:00":
+            (now) => now.with({ month: 9, day: 23 }).startOfDay().add({ hours: 12 }),
+        "September 23, 2004 at 12:00":
+            (now) => now.with({ year: 2004, month: 9, day: 23 }).startOfDay().add({ hours: 12 }),
+        "23 September 2004 at 12:00":
+            (now) => now.with({ year: 2004, month: 9, day: 23 }).startOfDay().add({ hours: 12 }),
+        "2004 September 23 at 12:00":
+            (now) => now.with({ year: 2004, month: 9, day: 23 }).startOfDay().add({ hours: 12 }),
+        "2004-09-23 at 12:00":
+            (now) => now.with({ year: 2004, month: 9, day: 23 }).startOfDay().add({ hours: 12 }),
         "yesterday":
             (now) => now.subtract({ days: 1 }).startOfDay(),
         "yesterday 14:00":
