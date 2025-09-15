@@ -470,7 +470,7 @@ export default class TimeParser extends Parser {
             return { hours: 6, minutes: 0 };
         } else if (word.toLowerCase() === "afternoon") {
             return { hours: 15, minutes: 0 };
-        } else if (/evening|night/.test(word.toLowerCase())) {
+        } else if (/^(evening|night)$/.test(word.toLowerCase())) {
             return { hours: 18, minutes: 0 };
         }
 
