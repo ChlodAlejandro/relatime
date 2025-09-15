@@ -133,10 +133,12 @@ export default class Parser {
                 if (i === 0) {
                     return match[0];
                 }
-                // Find out how big the next whitespace is and skip it.
-                const whitespaceRegex = cloneRegex(Parser.WHITESPACE_REGEX);
-                whitespaceRegex.lastIndex = match[0].length;
-                wordRegex.lastIndex += match[0].length + (whitespaceRegex.exec(this.working)?.[0].length ?? 0);
+                // Find out how big the next whitespace/punctuation is and skip it.
+                const skipRegex = combineRegex([
+                    Parser.WHITESPACE_REGEX, Parser.PUNCTUATION_REGEX,
+                ]);
+                skipRegex.lastIndex = match[0].length;
+                wordRegex.lastIndex += match[0].length + (skipRegex.exec(this.working)?.[0].length ?? 0);
                 i--;
             } else {
                 return null;
