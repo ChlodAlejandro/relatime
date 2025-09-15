@@ -41,6 +41,11 @@ export interface TimeParserWarningEvent {
     word: string;
 }
 
+export interface Relation {
+    match: string;
+    offset: number;
+}
+
 export interface TimeParserOptions {
     /**
      * Set the default time parsing mode. This can be overridden by the `modes` parameter in {@link parse}.
@@ -111,9 +116,9 @@ export default class TimeParser extends Parser {
         prepend: "\\b",
         append: "\\b",
     });
-    private static readonly PREVIOUS_REGEX = /^(last|previous|prior|precee?ding)$/i;
-    private static readonly THIS_REGEX = /^(this|now|current)$/i;
     private static readonly NEXT_REGEX = /^(next|following|succeeding|(up)?coming)$/i;
+    private static readonly THIS_REGEX = /^(this|now|current)$/i;
+    private static readonly PREVIOUS_REGEX = /^(last|previous|prior|precee?ding)$/i;
     private static readonly PREPOSITIONAL_REGEX = combineRegex([
         TimeParser.PREVIOUS_REGEX, TimeParser.THIS_REGEX, TimeParser.NEXT_REGEX,
     ], {
@@ -844,7 +849,7 @@ export default class TimeParser extends Parser {
                 base = now.add({ days: daysToAdd });
             } else {
                 // This might be a relative weekday. Check for relative words.
-                const possibleRelativeWord = this.consumeWord();
+                const possibleRelativeWord = this.consumeRelation();
                 if (!possibleRelativeWord) {
                     this.seek(postfixIndex);
                 } else {
@@ -1286,18 +1291,67 @@ export default class TimeParser extends Parser {
         );
     }
 
-    private getDateFromRelativeWeekday(weekday: number, relation: string): null | Temporal.ZonedDateTime {
+    /**
+     * Get a relation string such as "next", "last", "this", etc.
+     *
+     * This also handles relation chains such as "next next" or "last last last".
+     * This will specifically ban "following next week", which itself could just be
+     * part of a larger sentence (e.g. "Following next week, new changes are...").
+     * In other words, all relation words must be the same.
+     * @private
+     */
+    private consumeRelation(): Relation | null {
+        const startIndex = this.index;
+        const firstWord = this.peekWord()?.toLowerCase();
+        if (!firstWord || !TimeParser.PREPOSITIONAL_REGEX.test(firstWord)) {
+            return null;
+        }
+        this.consumeWord();
+
+        let offset = 0;
+        if (TimeParser.NEXT_REGEX.test(firstWord)) {
+            offset = 1;
+            while (firstWord === this.peekWord().toLowerCase()) {
+                this.consumeWord();
+                offset += 1;
+            }
+        } else if (TimeParser.PREVIOUS_REGEX.test(firstWord)) {
+            offset = -1;
+            while (firstWord === this.peekWord().toLowerCase()) {
+                this.consumeWord();
+                offset -= 1;
+            }
+        } else if (TimeParser.THIS_REGEX.test(firstWord)) {
+            offset = 0;
+            // We're not matching multiple "this"es.
+        }
+
+        return {
+            match: this.source.slice(startIndex, this.index).trim(),
+            offset,
+        };
+    }
+
+    private getDateFromRelativeWeekday(weekday: number, relation: { offset: number } | null): null | Temporal.ZonedDateTime {
         const now = this.now();
-        if (TimeParser.NEXT_REGEX.test(relation)) {
-            const daysUntilWeekday = (weekday + 7 - now.dayOfWeek) % 7;
-            const targetDate = now.add({ days: daysUntilWeekday === 0 ? 7 : daysUntilWeekday });
+        const daysInWeek = now.daysInWeek;
+
+        if (relation?.offset == null) {
+            return null;
+        } else if (relation.offset > 0) {
+            const daysUntilWeekday = (weekday + daysInWeek - now.dayOfWeek) % daysInWeek;
+            const daysUntilTarget =
+                (daysUntilWeekday === 0 ? daysInWeek : daysUntilWeekday) + (daysInWeek * (relation.offset - 1));
+            const targetDate = now.add({ days: daysUntilTarget });
             return targetDate.startOfDay();
-        } else if (TimeParser.PREVIOUS_REGEX.test(relation)) {
-            const daysSinceWeekday = (now.dayOfWeek + 7 - weekday) % 7;
-            const targetDate = now.subtract({ days: daysSinceWeekday === 0 ? 7 : daysSinceWeekday });
+        } else if (relation.offset < 0) {
+            const daysSinceWeekday = (now.dayOfWeek + daysInWeek - weekday) % daysInWeek;
+            const daysSinceTarget =
+                (daysSinceWeekday === 0 ? daysInWeek : daysSinceWeekday) + (daysInWeek * (relation.offset - 1));
+            const targetDate = now.subtract({ days: daysSinceTarget });
             return targetDate.startOfDay();
-        } else if (TimeParser.THIS_REGEX.test(relation)) {
-            const daysUntilWeekday = (weekday + 7 - now.dayOfWeek) % 7;
+        } else if (relation.offset === 0) {
+            const daysUntilWeekday = (weekday + daysInWeek - now.dayOfWeek) % daysInWeek;
             const targetDate = now.add({ days: daysUntilWeekday });
             return targetDate.startOfDay();
         } else {
@@ -1310,11 +1364,15 @@ export default class TimeParser extends Parser {
         word: string,
         startIndex: number,
     ): boolean {
-        if (!/^((next|(up)coming|this)|(last|previous|prior))$/i.test(word)) {
+        const currentIndex = this.index;
+
+        // Consume a relation word.
+        this.seek(startIndex);
+        const relation = this.consumeRelation();
+        if (!relation) {
+            this.seek(currentIndex);
             return false;
         }
-
-        const currentIndex = this.index;
 
         const weekday = this.consumeWeekday();
         if (weekday == null) {
@@ -1322,7 +1380,7 @@ export default class TimeParser extends Parser {
             return false;
         }
 
-        const date = this.getDateFromRelativeWeekday(weekday, word);
+        const date = this.getDateFromRelativeWeekday(weekday, relation);
         if (!date) {
             this.seek(currentIndex);
             return false;
@@ -1345,11 +1403,15 @@ export default class TimeParser extends Parser {
         word: string,
         startIndex: number,
     ): boolean {
-        if (!/^((next|(up)coming|this)|(last|previous|prior))$/i.test(word)) {
+        const currentIndex = this.index;
+
+        // Consume a relation word.
+        this.seek(startIndex);
+        const relation = this.consumeRelation();
+        if (!relation) {
+            this.seek(currentIndex);
             return false;
         }
-
-        const currentIndex = this.index;
 
         const weekday = this.consumeWeekday();
         if (weekday == null) {
@@ -1357,7 +1419,7 @@ export default class TimeParser extends Parser {
             return false;
         }
 
-        const date = this.getDateFromRelativeWeekday(weekday, word);
+        const date = this.getDateFromRelativeWeekday(weekday, relation);
         if (!date) {
             this.seek(currentIndex);
             return false;
@@ -1394,7 +1456,12 @@ export default class TimeParser extends Parser {
         startIndex: number,
     ): boolean {
         const currentIndex = this.index;
-        if (!TimeParser.PREPOSITIONAL_REGEX.test(word)) {
+
+        // Consume a relation word.
+        this.seek(startIndex);
+        const relation = this.consumeRelation();
+        if (!relation) {
+            this.seek(currentIndex);
             return false;
         }
 
@@ -1413,30 +1480,35 @@ export default class TimeParser extends Parser {
         const precision = unitCompare("day", unit) < 0 ? "day" : unit as Precision;
 
         // Check if it's a valid unit.
-        if (TimeParser.NEXT_REGEX.test(word.toLowerCase())) {
-            this.addMatch(
-                matches,
-                startIndex,
-                {
-                    date: now.add({ [unitWord + "s"]: 1 }),
-                    precision: precision,
-                    relative: true,
-                },
-            );
-        } else if (TimeParser.PREVIOUS_REGEX.test(word.toLowerCase())) {
-            this.addMatch(
-                matches,
-                startIndex,
-                {
-                    date: now.subtract({ [unitWord + "s"]: 1 }),
-                    precision: precision,
-                    relative: true,
-                },
-            );
-        } else if (TimeParser.THIS_REGEX.test(word.toLowerCase())) {
+        if (relation.offset === 0) {
             // Discard.
             this.seek(currentIndex);
             return false;
+        } else {
+            const action = relation.offset > 0 ? "add" : "subtract";
+
+            let date = now[action]({
+                [unitWord + "s"]: Math.abs(relation.offset),
+            });
+            if (durationUnitRegexes.week.test(unit)) {
+                // We specifically want to add another day when saying "next week"
+                // so that we target the same weekday. If we're getting "last week",
+                // we're still adding 1 day.
+                date = date.add({ days: 1 });
+            }
+
+            this.addMatch(
+                matches,
+                startIndex,
+                {
+                    date: date.round({
+                        smallestUnit: precision,
+                        roundingMode: "trunc",
+                    }),
+                    precision: precision,
+                    relative: true,
+                },
+            );
         }
     }
 
@@ -1459,20 +1531,19 @@ export default class TimeParser extends Parser {
             return false;
         }
 
-        const relativeWord = this.peekWord();
-        const date = this.getDateFromRelativeWeekday(weekday, relativeWord);
+        const relation = this.consumeRelation();
+        const date = this.getDateFromRelativeWeekday(weekday, relation);
         if (!date) {
             this.addMatch(
                 matches,
                 startIndex,
                 {
-                    date: this.getDateFromRelativeWeekday(weekday, "next"),
+                    date: this.getDateFromRelativeWeekday(weekday, { offset: 1 }),
                     precision: "day",
                 },
             );
         } else {
             // Consume the relative word.
-            this.consumeWord();
             if (this.peekWord() === "week") {
                 // Also consume "week" if it's there.
                 this.consumeWord();
@@ -1518,7 +1589,7 @@ export default class TimeParser extends Parser {
             this.seek(currentIndex);
             return false;
         }
-        const date = this.getDateFromRelativeWeekday(weekday, "this");
+        const date = this.getDateFromRelativeWeekday(weekday, { offset: 0 });
         const precision = timeOfDay ?
             (timeOfDay?.seconds != null ? "second" :
                 (timeOfDay?.minutes != null ? "minute" : "hour")) :

@@ -168,9 +168,9 @@ describe("TimeParser", () => {
     const simpleRelativeTests: Record<string, (now: Temporal.ZonedDateTime) => Temporal.ZonedDateTime> = {
         // Relative time
         "last day":
-            (now) => now.subtract({ days: 1 }),
+            (now) => now.subtract({ days: 1 }).startOfDay(),
         "previous year":
-            (now) => now.subtract({ years: 1 }),
+            (now) => now.subtract({ years: 1 }).startOfDay(),
         "back of 7am":
             (now) => now.startOfDay().add({ hours: 7, minutes: 15 }),
         "back of 15":
@@ -232,6 +232,14 @@ describe("TimeParser", () => {
         // Long text
         "just 1 asdkjashfakjsfhadfsklasjdkljasdlkj hour":
             (now) => now.add({ hours: 1 }),
+        "next week":
+            (now) => now.add({ weeks: 1, days: 1 }).startOfDay(),
+        "next next week":
+            (now) => now.add({ weeks: 2, days: 1 }).startOfDay(),
+        "last week":
+            (now) => now.subtract({ weeks: 1 }).add({ days: 1 }).startOfDay(),
+        "last last week":
+            (now) => now.subtract({ weeks: 2 }).add({ days: 1 }).startOfDay(),
     };
     const simpleTests = Object.assign(
         {}, simpleAbsoluteTests, simpleRelativeTests,
@@ -569,6 +577,25 @@ describe("TimeParser", () => {
             const parser = new TimeParser("200 pp", timezone);
             const results = parser.parse();
             expect(results).toHaveLength(0);
+        });
+        it("should not parse 'Monday week'", () => {
+            const parser = new TimeParser("Monday week", timezone);
+            const results = parser.parse();
+            expect(results).toHaveLength(1);
+            // This should only match "Monday"
+            expect(results[0].match).toBe("Monday");
+            expect(results[0].date.toInstant().toString(stringifyOptions))
+                .toBe(now.add({ days: (1 + 7 - now.dayOfWeek) % 7 || 7 }).startOfDay().toInstant().toString(stringifyOptions));
+        });
+        it("should not parse 'Following next Monday'", () => {
+            const parser = new TimeParser("Following next Monday", timezone);
+            const results = parser.parse();
+            expect(results).toHaveLength(1);
+            // This should only match "next Monday"
+            expect(results[0].match).toBe("next Monday");
+            const daysUntilMonday = (1 + 7 - now.dayOfWeek) % 7;
+            expect(results[0].date.toInstant().toString(stringifyOptions))
+                .toBe(now.add({ days: daysUntilMonday === 0 ? 7 : daysUntilMonday }).startOfDay().toInstant().toString(stringifyOptions));
         });
     });
 
