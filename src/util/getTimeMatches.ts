@@ -61,7 +61,7 @@ export default function getTimeMatches(
         if (!match.relative) {
             notes.push(
                 match.precision === "day" ?
-                    `<t:${epoch}:R> until midnight` : `<t:${epoch}:R>`,
+                    `midnight <t:${epoch}:R>` : `<t:${epoch}:R>`,
             );
         }
 
