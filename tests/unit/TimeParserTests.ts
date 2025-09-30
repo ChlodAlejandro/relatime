@@ -178,6 +178,11 @@ describe("TimeParser", () => {
             (now) => now.startOfDay().add({ hours: 14 }),
         "9:30 of tomorrow":
             (now) => now.add({ days: 1 }).startOfDay().add({ hours: 9, minutes: 30 }),
+        "around 6pm at sunday":
+            (now) => {
+                const daysUntilSunday = (7 - now.dayOfWeek) % 7;
+                return now.add({ days: daysUntilSunday === 0 ? 7 : daysUntilSunday }).startOfDay().add({ hours: 18 });
+            },
     };
     const simpleRelativeTests: Record<string, (now: Temporal.ZonedDateTime) => Temporal.ZonedDateTime> = {
         // Relative time

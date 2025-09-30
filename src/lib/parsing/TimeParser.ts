@@ -1132,7 +1132,7 @@ export default class TimeParser extends Parser {
         } else {
             // Find out if this is a weekday or a relative weekday.
             const weekday = this.consumeWeekday();
-            if (weekday) {
+            if (weekday != null) {
                 // Weekday found. Get the next occurrence of that weekday.
                 // If it's the current weekday, we're returning next week's occurrence.
                 const daysToAdd = (weekday + 7 - now.dayOfWeek) % 7 || 7;
