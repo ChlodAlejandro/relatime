@@ -162,10 +162,12 @@ describe("TimeParser", () => {
             (now) => now.startOfDay().add({ hours: 21 }),
         "12am":
             (now) => now.startOfDay(),
-        "9a":
-            (now) => now.startOfDay().add({ hours: 9 }),
-        "10p":
-            (now) => now.startOfDay().add({ hours: 22 }),
+        // Only works with an absolute date
+        "September 4 at 9a":
+            (now) => now.with({ month: 9, day: 4 }).startOfDay().add({ hours: 9 }),
+        // Only works with an absolute date
+        "September 4 at 10p":
+            (now) => now.with({ month: 9, day: 4 }).startOfDay().add({ hours: 22 }),
         "12pm":
             (now) => now.startOfDay().add({ hours: 12 }),
         "12p.m. yesterday":

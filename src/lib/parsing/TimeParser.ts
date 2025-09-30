@@ -65,7 +65,8 @@ export default class TimeParser extends Parser {
     // Matching here is somewhat strict to avoid accidentally matching ratios (e.g. "1:1", "100:1").
     // Also discards the result if there's an extra number at any point after any unit (e.g. "1:100pm").
     private static readonly TIME_REGEX = /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?(?!\d)/;
-    private static readonly MERIDIAN_REGEX = /^([ap](?:\.?m\.?|\b))/i;
+    private static readonly MERIDIAN_REGEX = /^([ap]\.?m\.?)/i;
+    private static readonly SENSITIVE_MERIDIAN_REGEX = /^([ap](?:\.?m\.?|\b))/i;
     private static readonly MONTH_REGEXES = {
         1: /^jan?(uary)?$/i,
         2: /^fe?b?(r?uary)?$/i,
@@ -368,13 +369,21 @@ export default class TimeParser extends Parser {
      * no time was found, null is returned. This advances the parser's index.
      *
      * @protected
+     * @param sensitive Whether to enable sensitive parsing (matches "9a"/"9p"). This should
+     *   usually only be enabled when the time precedes or succeeds a date, as it can lead to
+     *   a lot of false positives.
      * @param allowHourOnly Whether to allow hour numbers only when no meridian is provided. Otherwise,
      *  minutes will be required.
      */
-    public consumeTimeOfDay(allowHourOnly = false): null | { days?: number, hours: number, minutes: number, seconds?: number } {
+    public consumeTimeOfDay(sensitive: boolean = false, allowHourOnly = false): {
+        days?: number;
+        hours: number;
+        minutes: number;
+        seconds?: number
+    } | null {
         const startIndex = this.index;
 
-        const exact = this.consumeExactTimeOfDay(allowHourOnly);
+        const exact = this.consumeExactTimeOfDay(sensitive, allowHourOnly);
         if (exact) {
             return exact;
         } else {
@@ -394,14 +403,24 @@ export default class TimeParser extends Parser {
     /**
      * This does NOT reset the parser's index on failure. Use {@link consumeTimeOfDay} instead.
      * @protected
+     * @param sensitive Whether to enable sensitive parsing (matches "9a"/"9p")
      * @param allowHourOnly Whether to allow hour numbers only when no meridian is provided. Otherwise,
      *  minutes will be required.
      */
-    protected consumeExactTimeOfDay(allowHourOnly = false): null | { days: number, hours: number, minutes: number, seconds: number } {
+    protected consumeExactTimeOfDay(sensitive: boolean = false, allowHourOnly = false): {
+        days: number;
+        hours: number;
+        minutes: number;
+        seconds: number
+    } | null {
         const textMatch = this.consumeRegex(TimeParser.TIME_REGEX);
         if (!textMatch) {
             return null;
         }
+
+        const meridianRegex = sensitive ?
+            TimeParser.SENSITIVE_MERIDIAN_REGEX :
+            TimeParser.MERIDIAN_REGEX;
 
         const match = textMatch.match(TimeParser.TIME_REGEX);
         let days = 0;
@@ -413,9 +432,9 @@ export default class TimeParser extends Parser {
         this.consumeWhitespace();
 
         // Detect meridians
-        const meridian = this.peekRegex(TimeParser.MERIDIAN_REGEX);
+        const meridian = this.peekRegex(meridianRegex);
         if (meridian) {
-            this.consumeRegex(TimeParser.MERIDIAN_REGEX);
+            this.consumeRegex(meridianRegex);
             if (meridian.toLowerCase().startsWith("p") && hours < 12) {
                 hours += 12;
             } else if (meridian.toLowerCase().startsWith("a") && hours === 12) {
@@ -441,9 +460,16 @@ export default class TimeParser extends Parser {
             minutes -= 60;
             hours = (hours + 1) % 24;
         }
-        // Keep hour down.
+        // Discard if hours is over 25 to avoid matching things like 93:20 unless
+        // it's being used with a date. Then in that case it might be intentional?
         // This allows us to detect "25:00". This one's for you, Akiyama Mizuki.
-        while (hours > 23) {
+        if (sensitive && hours > 25) {
+            while (hours > 24) {
+                hours -= 24;
+                days += 1;
+            }
+            return null;
+        } else if (hours > 24) {
             hours -= 24;
             days += 1;
         }
@@ -923,7 +949,7 @@ export default class TimeParser extends Parser {
             this.consumeWord();
         }
 
-        const timeOfDay = this.consumeTimeOfDay();
+        const timeOfDay = this.consumeTimeOfDay(true);
         if (!timeOfDay) {
             this.seek(currentIndex);
             return false;
@@ -953,7 +979,7 @@ export default class TimeParser extends Parser {
 
         // Consume an absolute time
         this.seek(startIndex);
-        const timeOfDay = this.consumeTimeOfDay();
+        const timeOfDay = this.consumeTimeOfDay(true);
         if (!timeOfDay) {
             this.seek(currentIndex);
             return false;
@@ -1194,7 +1220,7 @@ export default class TimeParser extends Parser {
         const currentIndex = this.index;
         // Move us back so we can consume this time of day.
         this.seek(startIndex);
-        const timeOfDay = this.consumeTimeOfDay(true);
+        const timeOfDay = this.consumeTimeOfDay(true, true);
         if (!timeOfDay) {
             this.seek(currentIndex);
             return false;
@@ -1253,7 +1279,7 @@ export default class TimeParser extends Parser {
 
         const today = this.now()
             .startOfDay();
-        let time = this.consumeTimeOfDay();
+        let time = this.consumeTimeOfDay(true);
         if (!time) {
             // We'll also consider normal numbers as hours.
             // Again, thanks PHP.
@@ -1695,7 +1721,7 @@ export default class TimeParser extends Parser {
             this.consumeWord();
         }
 
-        const timeOfDay = this.consumeTimeOfDay();
+        const timeOfDay = this.consumeTimeOfDay(true);
         if (!timeOfDay) {
             this.seek(currentIndex);
             return false;
@@ -1849,7 +1875,7 @@ export default class TimeParser extends Parser {
             this.consumeWord();
         }
 
-        const timeOfDay = this.consumeTimeOfDay();
+        const timeOfDay = this.consumeTimeOfDay(true);
         if (!timeOfDay) {
             this.seek(currentIndex);
             return false;
