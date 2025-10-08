@@ -6,8 +6,8 @@ import combineRegex from "../../util/combineRegex";
  */
 export default class Parser {
 
-    private static readonly WORD_REGEX = /^[^\s\p{P}]+/u;
-    private static readonly PUNCTUATION_REGEX = /^\p{P}+/u;
+    private static readonly WORD_REGEX = /^[^\s\p{P}\p{S}]+/u;
+    private static readonly PUNCTUATION_REGEX = /^[\p{P}\p{S}]+/u;
     private static readonly WHITESPACE_REGEX = /^\s+/;
     private static readonly WHITESPACE_SIMPLE_REGEX = /^[ \t]+/;
     private static readonly NUMBER_REGEX = /^\d+/;
