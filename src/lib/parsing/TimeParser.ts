@@ -259,7 +259,7 @@ export default class TimeParser extends Parser {
 
     private warn(message: string, startIndex: number, word: string) {
         this._onWarning.dispatch({
-            message: "Parser did not advance",
+            message: message,
             source: this.source,
             index: this.index,
             startIndex,
