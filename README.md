@@ -42,6 +42,10 @@ npm install
 npm run start
 ```
 
+### Hooks
+If you want to add in custom functionality to the bot without modifying the core code, you can add hooks to the
+`hooks/` directory. See the [`hooks/README.md`](hooks/README.md) for more information.
+
 ## License
 Apache License 2.0. See [LICENSE](LICENSE) for more information.
 ```

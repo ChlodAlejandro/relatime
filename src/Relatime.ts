@@ -11,6 +11,7 @@ import onMessageCreate from "./handlers/onMessageCreate";
 import onMessageDelete from "./handlers/onMessageDelete";
 import onMessageBulkDelete from "./handlers/onMessageBulkDelete";
 import onMessageUpdate from "./handlers/onMessageUpdate";
+import { loadHooks } from "./handlers/util/loadHooks";
 import { loadCommands } from "./interaction/loader";
 import RelatimeClient from "./RelatimeClient";
 import { getOperatorGuilds } from "./util/isOperatorGuild";
@@ -46,6 +47,7 @@ class Relatime {
     }
 
     // Properties
+    public readonly rootDir = path.join(__dirname, "..");
     public log: Logger;
     public db: Knex;
     public rest: REST;
@@ -168,7 +170,10 @@ class Relatime {
         });
     }
 
-    protected setupGatewayHandlers() {
+    protected async setupGatewayHandlers() {
+        this.log.info("Preloading event handler hooks...");
+        await loadHooks();
+
         this.log.info("Setting event handlers...");
         this.client.on(Events.InteractionCreate, onInteractionCreate);
         this.client.on(Events.MessageCreate, onMessageCreate);
@@ -197,7 +202,7 @@ class Relatime {
         this.setupDiscord();
         // TODO: Move this to sharding manager, when we get big enough.
         await this.setupCommands();
-        this.setupGatewayHandlers();
+        await this.setupGatewayHandlers();
         await this.loginDiscord();
     }
 

@@ -1,6 +1,11 @@
-node_modules
+node_modules/
+
 .env
-data
+data/
 relatime.db
 relatime.log
-build
+
+build/
+
+hooks/*
+!hooks/README.md
